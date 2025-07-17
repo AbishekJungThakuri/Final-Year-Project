@@ -5,6 +5,8 @@ import {
   editPlanThunk,
   deletePlanThunk,
   fetchPlanByIdThunk,
+  deleteStepThunk,
+  deleteDayThunk,
 } from '../features/plan/AiplanSlice';
 
 import AddDayForm from '../components/AiPlan/EditplanCom/AddDayForm';
@@ -47,14 +49,43 @@ const EditPlan = () => {
   };
 
   const handleDelete = () => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this entire plan?');
+    if (!confirmDelete) return;
+
     dispatch(deletePlanThunk(planId)).then(() => {
       navigate('/');
     });
   };
 
-  if (fetchStatus === 'loading' || !plan) return <p className="text-center mt-10">Loading plan...</p>;
+  const handleDeleteDay = (dayId) => {
+    const confirmDelete = window.confirm('Are you sure you want to delete this day?');
+    if (!confirmDelete) return;
 
-  // Get latest dayId
+    dispatch(deleteDayThunk({ planId, dayId })).then(() => {
+      dispatch(fetchPlanByIdThunk(planId));
+    });
+  };
+
+  const handleDeleteLatestStep = () => {
+    const latestDay = plan.days?.[plan.days.length - 1];
+    const latestStep = latestDay?.steps?.[latestDay.steps.length - 1];
+
+    if (!latestStep) {
+      alert('No steps to delete.');
+      return;
+    }
+
+    const confirmDelete = window.confirm('Are you sure you want to delete the latest step?');
+    if (!confirmDelete) return;
+
+    dispatch(deleteStepThunk({ planId })).then(() => {
+      dispatch(fetchPlanByIdThunk(planId));
+    });
+  };
+
+  if (fetchStatus === 'loading' || !plan)
+    return <p className="text-center mt-10">Loading plan...</p>;
+
   const latestDayId = plan.days?.[plan.days.length - 1]?.id;
 
   return (
@@ -119,14 +150,27 @@ const EditPlan = () => {
               key={day.id}
               className="bg-white p-4 rounded-xl shadow border-l-4 border-yellow-500"
             >
-              <h3 className="text-xl font-bold text-gray-800 mb-2">{day.title}</h3>
+              <div className="flex justify-between items-center">
+                <h2 className="font-bold text-xl text-gray-800 mb-2">{day.title}</h2>
+                <button
+                  onClick={() => handleDeleteDay(day.id)}
+                  className="text-red-500 text-sm"
+                >
+                  Delete Day
+                </button>
+              </div>
               <ul className="list-disc ml-6 mt-2 text-gray-700">
                 {day.steps?.map((step) => (
-                  <li key={step.id} className="mb-1">
-                    <strong>{step.title}</strong> – Rs{' '}
-                    <span className="text-green-600 font-semibold">
-                      {step.cost?.toFixed(2) || '0.00'}
-                    </span>
+                  <li
+                    key={step.id}
+                    className="mb-1 flex justify-between items-center"
+                  >
+                    <div>
+                      <strong>{step.title}</strong> – Rs{' '}
+                      <span className="text-green-600 font-semibold">
+                        {step.cost?.toFixed(2) || '0.00'}
+                      </span>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -134,20 +178,25 @@ const EditPlan = () => {
           ))}
         </div>
 
-           {/* AddDayForm (at bottom) */}
+        <button
+          onClick={handleDeleteLatestStep}
+          className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
+        >
+          Delete Latest Step
+        </button>
+
+        {/* AddDayForm */}
         <div className="mt-6 bg-white p-4 rounded-lg shadow">
           <AddDayForm planId={plan.id} />
         </div>
-        
-        {/* AddStepForm (single – add to latest day) */}
+
+        {/* AddStepForm */}
         {latestDayId && (
           <div className="mt-6 bg-white p-4 rounded-lg shadow">
             <h3 className="text-lg font-semibold mb-2">Add Step to Latest Day</h3>
             <AddStepForm dayId={latestDayId} planId={plan.id} />
           </div>
         )}
-
-       
       </div>
     </div>
   );

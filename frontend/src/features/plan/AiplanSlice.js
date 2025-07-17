@@ -142,6 +142,44 @@ export const addStepThunk = createAsyncThunk(
 );
 
 
+// DELETE a day
+export const deleteDayThunk = createAsyncThunk(
+  'plan/deleteDay',
+  async ({ planId, dayId }, { rejectWithValue }) => {
+    try {
+      await axios.delete('/plan-days/', { params: { plan_id: planId, plan_day_id: dayId } });
+      return dayId;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+// DELETE a step
+export const deleteStepThunk = createAsyncThunk(
+  'plan/deleteStep',
+  async ({ planId, stepId }, { rejectWithValue }) => {
+    try {
+      await axios.delete('/plan-day-steps/', { params: { plan_id: planId, plan_day_step_id: stepId } });
+      return stepId;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+// UPDATE day title
+export const updateDayThunk = createAsyncThunk(
+  'plan/updateDay',
+  async ({ dayId, title }, { rejectWithValue }) => {
+    try {
+      const res = await axios.put(`/plan-days/${dayId}`, { title });
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
 
 
 
@@ -239,7 +277,33 @@ const AiplanSlice = createSlice({
 })
 .addCase(addStepThunk.fulfilled, (state, action) => {
   state.data = action.payload;
-});
+})
+      // Delete Day
+      .addCase(deleteDayThunk.fulfilled, (state, action) => {
+        if (state.data?.days) {
+          state.data.days = state.data.days.filter(day => day.id !== action.payload);
+        }
+      })
+
+      // Delete Step
+      .addCase(deleteStepThunk.fulfilled, (state, action) => {
+        if (state.data?.days) {
+          state.data.days = state.data.days.map(day => ({
+            ...day,
+            steps: day.steps?.filter(step => step.id !== action.payload)
+          }));
+        }
+      })
+
+      // Update Day Title
+      .addCase(updateDayThunk.fulfilled, (state, action) => {
+        const updatedDay = action.payload;
+        const dayIndex = state.data?.days?.findIndex(day => day.id === updatedDay.id);
+        if (dayIndex !== -1) {
+          state.data.days[dayIndex] = updatedDay;
+        }
+      });
+
   },
 });
 
