@@ -99,8 +99,7 @@ const AddStepComponent = ({ planId, dayId, onClose }) => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">Add Next Step</h3>
-          <p className="text-gray-600">Find places and activities for your itinerary</p>
+          <h3 className="text-2xl font-bold text-gray-900">Add Next Step</h3>
           {error && (
             <div className="mt-3 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
               {error}
@@ -132,7 +131,7 @@ const AddStepComponent = ({ planId, dayId, onClose }) => {
               }`}
             >
               <Car className="h-4 w-4" />
-              <span>Transport</span>
+              <span>Travel to</span>
             </button>
           </div>
 
