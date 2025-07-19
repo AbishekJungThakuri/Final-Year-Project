@@ -4,7 +4,8 @@ import { Login } from "./pages/Login/Login";
 import { Signup } from "./pages/SignUp/Signup";
 import Navbar from "./components/Navbar/Navbar";
 import { Home } from "./pages/Home/Home";
-import EditPlan from "./pages/EditPlan";
+// import EditPlan from "./pages/EditPlan";
+import Plan from './pages/Plan/Plan'
 
 function AppLayout() {
   const location = useLocation();
@@ -17,7 +18,8 @@ function AppLayout() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/edit/:id" element={<EditPlan />} />
+        {/* <Route path="/edit/:id" element={<EditPlan />} /> */}
+        <Route path="/plan/:id" element={<Plan/>} />
       </Routes>
     </>
   );
@@ -32,3 +34,5 @@ function App() {
 }
 
 export default App;
+
+

@@ -66,4 +66,30 @@ const LocationSlice = createSlice({
   },
 });
 
-export default LocationSlice.reducer;
+export default LocationSlice.reducer;  
+
+
+// import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+// export const locationApi = createApi({
+//   reducerPath: 'locationApi',
+//   baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:8000' }), // adjust if needed
+//   tagTypes: ['Location'],
+//   endpoints: (builder) => ({
+//     fetchPlaces: builder.query({
+//       query: () => '/places',
+//       providesTags: ['Location'],
+//     }),
+//     fetchCities: builder.query({
+//       query: () => '/cities',
+//       providesTags: ['Location'],
+//     }),
+//   }),
+// });
+
+// export const {
+//   useFetchPlacesQuery,
+//   useFetchCitiesQuery,
+// } = locationApi;
+
+

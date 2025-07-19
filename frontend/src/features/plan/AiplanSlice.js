@@ -121,25 +121,25 @@ export const addDayThunk = createAsyncThunk(
 // Add a new step to a specific day
 export const addStepThunk = createAsyncThunk(
   'plan/addStep',
-  async ({ planId, dayId, category, placeId, endCityId }, { rejectWithValue }) => {
+  async ({ planId, category, placeId, endCityId }, { rejectWithValue }) => {
     try {
       const payload = {
         plan_id: Number(planId),
-        plan_day_id: Number(dayId),
         category,
-        place_id: category === 'visit' ? Number(placeId) : null,
-        end_city_id: category === 'transport' ? Number(endCityId) : null,
-        place_activity_id: null,
+        place_id: category === 'visit' ? Number(placeId) : 0,      
+        end_city_id: category === 'transport' ? Number(endCityId) : 0, 
+        place_activity_id: 0
       };
 
       const res = await axios.post('/plan-day-steps/', payload);
       return res.data.data;
     } catch (err) {
-      console.error('Add step error:', err.response?.data);
+      console.error('Add step error:', err.response?.data?.detail || err.response?.data || err.message);
       return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
+
 
 
 // DELETE a day
@@ -308,3 +308,4 @@ const AiplanSlice = createSlice({
 });
 
 export default AiplanSlice.reducer;
+

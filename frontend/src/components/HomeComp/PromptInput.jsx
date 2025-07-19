@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { generatePlanThunk } from '../../../features/plan/AiplanSlice';
 import { useNavigate } from 'react-router-dom';
+import { generatePlanThunk } from '../../features/plan/AiplanSlice';
 
-const ChatInput = () => {
+const PromptInput = () => {
   const [input, setInput] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -47,4 +47,4 @@ const ChatInput = () => {
   );
 };
 
-export default ChatInput;
+export default PromptInput;
