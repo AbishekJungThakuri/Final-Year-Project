@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search, MapPin, Clock, DollarSign, Plus, Car, Camera, Loader2, ChevronDown } from "lucide-react";
+import { Search, MapPin, Clock, DollarSign, Plus, Car, Camera, Loader2, ChevronDown, Route } from "lucide-react";
 
 import { fetchPlacesThunk, fetchCitiesThunk } from '../../features/plan/LocationSlice';
 import { addStepThunk } from '../../features/plan/AiplanSlice';
@@ -27,45 +27,42 @@ const AddStepComponent = ({ planId, dayId, onClose }) => {
   const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
-    dispatch(fetchPlacesThunk());
-    dispatch(fetchCitiesThunk());
-  }, [dispatch]);
+    if (category === 'visit') {
+      dispatch(fetchPlacesThunk({
+        search: searchTerm,
+        cityId: selectedCity ? parseInt(selectedCity) : null,
+        page: 1,
+        size: placesDisplayCount,
+        sortBy: 'id',
+        order: 'asc'
+      }));
+    } else if (category === 'transport') {
+      dispatch(fetchCitiesThunk({
+        search: searchTerm,
+        page: 1,
+        size: citiesDisplayCount
+      }));
+    }
+  }, [category, searchTerm, selectedCity, placesDisplayCount, citiesDisplayCount]);
 
+  
   // Reset display count when category or search changes
   useEffect(() => {
     setPlacesDisplayCount(5);
     setCitiesDisplayCount(5);
   }, [category, searchTerm, selectedCity]);
 
-  // Filter places based on search term and selected city
-  const filteredPlaces = places.filter(place => {
-    const matchesSearch = place.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         place.description?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCity = !selectedCity || place.city_id === parseInt(selectedCity);
-    return matchesSearch && matchesCity && category === 'visit';
-  });
-
-  const filteredCities = cities.filter(city => 
-    city.name.toLowerCase().includes(searchTerm.toLowerCase()) && category === 'transport'
-  );
-
   // Get displayed items based on current display count
-  const displayedPlaces = filteredPlaces.slice(0, placesDisplayCount);
-  const displayedCities = filteredCities.slice(0, citiesDisplayCount);
-
-  console.log(displayedPlaces)
-
-  // Check if there are more items to load
-  const hasMorePlaces = filteredPlaces.length > placesDisplayCount;
-  const hasMoreCities = filteredCities.length > citiesDisplayCount;
-
+  const displayedPlaces = places;
+  const displayedCities = cities;
   const handleLoadMorePlaces = () => {
     setPlacesDisplayCount(prev => prev + ITEMS_PER_PAGE);
   };
-
+  
   const handleLoadMoreCities = () => {
     setCitiesDisplayCount(prev => prev + ITEMS_PER_PAGE);
   };
+  
 
   const handleAddStep = async (itemId, itemType) => {
     setError(null);
@@ -102,8 +99,7 @@ const AddStepComponent = ({ planId, dayId, onClose }) => {
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="bg-white p-6 rounded-lg shadow-sm">
-          <h3 className="text-2xl font-bold text-gray-900 mb-2">Add Next Step</h3>
-          <p className="text-gray-600">Find places and activities for your itinerary</p>
+          <h3 className="text-2xl font-bold text-gray-900">Add Next Step</h3>
           {error && (
             <div className="mt-3 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
               {error}
@@ -135,25 +131,10 @@ const AddStepComponent = ({ planId, dayId, onClose }) => {
               }`}
             >
               <Car className="h-4 w-4" />
-              <span>Transport</span>
+              <span>Travel to</span>
             </button>
           </div>
 
-          {/* City Filter for Places */}
-          {category === 'visit' && (
-            <select 
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">All cities...</option>
-              {cities.map((city) => (
-                <option key={city.id} value={city.id}>
-                  {city.name}
-                </option>
-              ))}
-            </select>
-          )}
 
           {/* Search Input */}
           <div className="relative">
@@ -166,18 +147,6 @@ const AddStepComponent = ({ planId, dayId, onClose }) => {
               className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
-
-          {/* Results Counter */}
-          {category === 'visit' && !placesLoading && (
-            <p className="text-sm text-gray-600">
-              Showing {displayedPlaces.length} of {filteredPlaces.length} places
-            </p>
-          )}
-          {category === 'transport' && !citiesLoading && (
-            <p className="text-sm text-gray-600">
-              Showing {displayedCities.length} of {filteredCities.length} cities
-            </p>
-          )}
         </div>
 
         {/* Loading State */}
@@ -195,69 +164,72 @@ const AddStepComponent = ({ planId, dayId, onClose }) => {
               <>
                 {displayedPlaces.map((place) => (
                   <div key={place.id} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex space-x-4">
-                        <img
-                          src={place.images?.[0]?.url}
-                          alt={place.name}
-                          className="w-24 h-16 rounded-lg object-cover shadow-sm"
-                        />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-3">
-                              <h4 className="text-lg font-semibold text-gray-900">{place.name}</h4>
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                                {place.category || 'Place'}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => handleAddStep(place.id, 'visit')}
-                              disabled={loading}
-                              className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
-                            >
-                              {loading ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Plus className="h-4 w-4" />
-                              )}
-                              <span>Add Step</span>
-                            </button>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-3">
-                            {place.description || "No description available"}
-                          </p>
-                          <div className="flex items-center space-x-6 text-sm text-gray-500">
-                            <div className="flex items-center space-x-1">
-                              <Clock className="h-4 w-4" />
-                              <span>{place.duration || "2-3 hours"}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <DollarSign className="h-4 w-4" />
-                              <span>${place.cost || 0}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <MapPin className="h-4 w-4" />
-                              <span>{place.city?.name || "City"}</span>
-                            </div>
-                          </div>
+                  <div className="p-4 flex items-center space-x-4">
+                    {/* Left: Image */}
+                    <img
+                      src={place.images?.[0]?.url}
+                      alt={place.name}
+                      className="w-28 h-20 rounded-lg object-cover shadow-sm"
+                    />
+                
+                    {/* Middle: Title + Meta */}
+                    <div className="flex-1 space-y-2">
+                      {/* Title */}
+                      <h4 className="text-lg font-semibold text-gray-900 leading-snug break-words">
+                        {place.name}
+                      </h4>
+                
+                      {/* Meta: Category, City, Duration */}
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="h-4 w-4" />
+                          <span>{place.city?.name || "City"}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Clock className="h-4 w-4" />
+                          <span>
+                            {place.average_visit_duration
+                              ? `${place.average_visit_duration} hour${place.average_visit_duration > 1 ? "s" : ""}`
+                              : "2-3 hours"}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                            {place.category || "Place"}
+                          </span>
                         </div>
                       </div>
                     </div>
+                
+                    {/* Right: Add Step button */}
+                    <div className="flex-shrink-0">
+                      <button
+                        onClick={() => handleAddStep(place.id, 'visit')}
+                        disabled={loading}
+                        className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+                      >
+                        {loading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4" />
+                        )}
+                        <span>Add Step</span>
+                      </button>
+                    </div>
                   </div>
+                </div>                
                 ))}
                 
                 {/* Load More Button for Places */}
-                {hasMorePlaces && (
                   <div className="text-center py-4">
                     <button
                       onClick={handleLoadMorePlaces}
                       className="flex items-center space-x-2 px-6 py-3 mx-auto bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm"
                     >
                       <ChevronDown className="h-4 w-4" />
-                      <span>Load More Places ({filteredPlaces.length - placesDisplayCount} remaining)</span>
+                      <span>Load More</span>
                     </button>
                   </div>
-                )}
               </>
             ) : (
               <div className="text-center py-8 text-gray-500">
@@ -281,15 +253,21 @@ const AddStepComponent = ({ planId, dayId, onClose }) => {
                           <Car className="h-6 w-6 text-white" />
                         </div>
                         <div>
-                          <h4 className="text-lg font-semibold text-gray-900">{city.name}</h4>
-                          <p className="text-sm text-gray-600">
-                            Travel to {city.name}
+                        <div className="text-base text-gray-800">
+                          <p>
+                            Travel to <span className="font-semibold">{city.name}</span>
                           </p>
-                          <div className="flex items-center space-x-2 mt-1 text-sm text-gray-500">
-                            <span>Lat: {city.latitude}</span>
-                            <span>•</span>
-                            <span>Lng: {city.longitude}</span>
-                          </div>
+                          <p className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                            <span className="flex items-center space-x-1">
+                              <Route className="h-4 w-4" />
+                              <span>{city.distance || "40"} km</span>
+                            </span>
+                            <span className="flex items-center space-x-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{city.duration || "2-3"} hours</span>
+                            </span>
+                          </p>
+                        </div>
                         </div>
                       </div>
                       <button
@@ -309,17 +287,16 @@ const AddStepComponent = ({ planId, dayId, onClose }) => {
                 ))}
                 
                 {/* Load More Button for Cities */}
-                {hasMoreCities && (
                   <div className="text-center py-4">
                     <button
                       onClick={handleLoadMoreCities}
                       className="flex items-center space-x-2 px-6 py-3 mx-auto bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm"
                     >
                       <ChevronDown className="h-4 w-4" />
-                      <span>Load More Cities ({filteredCities.length - citiesDisplayCount} remaining)</span>
+                      <span>Load More</span>
                     </button>
                   </div>
-                )}
+                
               </>
             ) : (
               <div className="text-center py-8 text-gray-500">

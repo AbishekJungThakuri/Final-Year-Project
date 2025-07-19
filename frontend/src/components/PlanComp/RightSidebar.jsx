@@ -5,7 +5,7 @@ import AddStepComponent from "./AddStepComponent";
 import DetailsComponent from "./DetailsComponent";
 import ChatComponent from "./ChatComponent";
 
-const RightSidebar = () => {
+const RightSidebar = ({plan}) => {
   const [activeComponent, setActiveComponent] = useState('add');
 
   const navigationItems = [
@@ -16,7 +16,7 @@ const RightSidebar = () => {
 
   const renderActiveComponent = () => {
     switch (activeComponent) {
-      case 'add': return <AddStepComponent />;
+      case 'add': return <AddStepComponent planId={plan.id} />;
       case 'details': return <DetailsComponent />;
       case 'chat': return <ChatComponent />;
       default: return <AddStepComponent />;

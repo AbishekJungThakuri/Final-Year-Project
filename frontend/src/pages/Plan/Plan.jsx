@@ -74,7 +74,7 @@ const Plan = () => {
     <div className="min-h-screen bg-background">
       <div className="flex" style={{ height: 'calc(100vh - 60px)' }}>
         {/* Left Section - 60% */}
-        <div className="w-[60%] bg-travel-gray/30 overflow-y-auto">
+        <div className="w-[55%] bg-travel-gray/30 overflow-y-auto">
           <div className="p-6">
             {/* Itinerary Card */}
             <div className="mb-8">
@@ -119,7 +119,7 @@ const Plan = () => {
         </div>
 
         {/* Right Section - 40% */}
-        <div className="w-[40%] border-l border-border">
+        <div className="w-[45%] border-l border-border">
           <RightSidebar plan={plan} />
         </div>
       </div>

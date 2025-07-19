@@ -4,9 +4,36 @@ import axios from 'axios';
 // Async thunk to fetch places
 export const fetchPlacesThunk = createAsyncThunk(
   'location/fetchPlaces',
-  async (_, { rejectWithValue }) => {
+  async ({ search = '', cityId = null, page = 1, size = 5, sortBy = 'id', order = 'asc' } = {}, { rejectWithValue }) => {
     try {
-      const res = await axios.get('/places');
+      const res = await axios.get('/places', {
+        params: {
+          search,
+          city_id: cityId,
+          page,
+          size,
+          sort_by: sortBy,
+          order
+        }
+      });
+      return res.data.data; // Assuming your backend returns paginated results in `data`
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+export const fetchCitiesThunk = createAsyncThunk(
+  'location/fetchCities',
+  async ({ search = '', page = 1, size = 5 } = {}, { rejectWithValue }) => {
+    try {
+      const res = await axios.get('/cities', {
+        params: {
+          search,
+          page,
+          size
+        }
+      });
       return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
@@ -14,18 +41,6 @@ export const fetchPlacesThunk = createAsyncThunk(
   }
 );
 
-// Async thunk to fetch cities
-export const fetchCitiesThunk = createAsyncThunk(
-  'location/fetchCities',
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await axios.get('/cities');
-      return res.data.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
-    }
-  }
-);
 
 const LocationSlice = createSlice({
   name: 'location',

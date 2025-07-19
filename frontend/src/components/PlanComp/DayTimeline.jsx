@@ -135,13 +135,7 @@ const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false }) => 
           )}
           
           {/* Add Step Button */}
-          <Button
-            variant="outline"
-            className="w-full border-dashed border-2 text-muted-foreground hover:text-primary hover:border-primary"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Next Step
-          </Button>
+         
         </div>
       )}
     </div>
