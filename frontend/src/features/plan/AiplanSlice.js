@@ -124,12 +124,13 @@ export const addStepThunk = createAsyncThunk(
   async ({ planId, category, placeId, endCityId }, { rejectWithValue }) => {
     try {
       const payload = {
-        plan_id: Number(planId),
-        category,
-        place_id: category === 'visit' ? Number(placeId) : 0,      
-        end_city_id: category === 'transport' ? Number(endCityId) : 0, 
-        place_activity_id: 0
+        plan_id: planId,
+        category: category,
+        place_id: category === 'visit' ? placeId: null,      
+        end_city_id: category === 'transport' ? endCityId : null, 
+        place_activity_id: null
       };
+      console.log('Sending payload:', JSON.stringify(payload, null, 2));
 
       const res = await axios.post('/plan-day-steps/', payload);
       return res.data.data;
