@@ -6,6 +6,7 @@ import { fetchPlacesThunk, fetchCitiesThunk } from '../../features/plan/Location
 import { addStepThunk } from '../../features/plan/AiplanSlice';
 
 const AddStepComponent = ({ planId, dayId, onClose }) => {
+  
   const dispatch = useDispatch();
   
   // Redux state

@@ -1,7 +1,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Async thunk to fetch places
+// ✅ NEW: Fetch single place by ID
+export const fetchPlaceByIdThunk = createAsyncThunk(
+  'location/fetchPlaceById',
+  async (placeId, { rejectWithValue }) => {
+    try {
+      const res = await axios.get(`/places/${placeId}`);
+      return res.data.data; // Assuming response: { data: { ...place } }
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+// Existing fetchPlacesThunk
 export const fetchPlacesThunk = createAsyncThunk(
   'location/fetchPlaces',
   async ({ search = '', cityId = null, page = 1, size = 5, sortBy = 'id', order = 'asc' } = {}, { rejectWithValue }) => {
@@ -16,13 +29,14 @@ export const fetchPlacesThunk = createAsyncThunk(
           order
         }
       });
-      return res.data.data; // Assuming your backend returns paginated results in `data`
+      return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
 
+// Existing fetchCitiesThunk
 export const fetchCitiesThunk = createAsyncThunk(
   'location/fetchCities',
   async ({ search = '', page = 1, size = 5 } = {}, { rejectWithValue }) => {
@@ -41,11 +55,11 @@ export const fetchCitiesThunk = createAsyncThunk(
   }
 );
 
-
 const LocationSlice = createSlice({
   name: 'location',
   initialState: {
     places: [],
+    placeDetails: null, // ✅ For individual place details
     cities: [],
     status: 'idle',
     error: null,
@@ -53,6 +67,7 @@ const LocationSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      // Fetch multiple places
       .addCase(fetchPlacesThunk.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -66,6 +81,7 @@ const LocationSlice = createSlice({
         state.error = action.payload;
       })
 
+      // Fetch cities
       .addCase(fetchCitiesThunk.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -77,34 +93,22 @@ const LocationSlice = createSlice({
       .addCase(fetchCitiesThunk.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
+      })
+
+      // ✅ Fetch place by ID
+      .addCase(fetchPlaceByIdThunk.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(fetchPlaceByIdThunk.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.placeDetails = action.payload;
+      })
+      .addCase(fetchPlaceByIdThunk.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
       });
   },
 });
 
-export default LocationSlice.reducer;  
-
-
-// import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-// export const locationApi = createApi({
-//   reducerPath: 'locationApi',
-//   baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:8000' }), // adjust if needed
-//   tagTypes: ['Location'],
-//   endpoints: (builder) => ({
-//     fetchPlaces: builder.query({
-//       query: () => '/places',
-//       providesTags: ['Location'],
-//     }),
-//     fetchCities: builder.query({
-//       query: () => '/cities',
-//       providesTags: ['Location'],
-//     }),
-//   }),
-// });
-
-// export const {
-//   useFetchPlacesQuery,
-//   useFetchCitiesQuery,
-// } = locationApi;
-
-
+export default LocationSlice.reducer;

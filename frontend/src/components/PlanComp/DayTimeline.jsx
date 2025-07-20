@@ -2,11 +2,13 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight, MapPin, Car, Camera, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useDispatch } from "react-redux";
 
-const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false }) => {
+const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false, onStepClick }) => {
   const [expanded, setExpanded] = useState(isExpanded);
-
-  const getStepIcon = (type) => {
+  
+  
+     const getStepIcon = (type) => {
     switch (type?.toLowerCase()) {
       case 'transport': return <Car className="h-4 w-4 text-travel-blue" />;
       case 'activity': return <Camera className="h-4 w-4 text-travel-green" />;
@@ -14,6 +16,8 @@ const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false }) => 
       default: return <MapPin className="h-4 w-4" />;
     }
   };
+
+  const dispatch = useDispatch();
 
   const getStepColor = (type) => {
     switch (type?.toLowerCase()) {
@@ -32,7 +36,7 @@ const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false }) => 
 
   // Format cost
   const formatCost = (cost) => {
-    return cost ? `$${cost}` : '$0';
+    return cost ? `Rs ${cost}` : '$0';
   };
 
   // Get step image
@@ -45,38 +49,20 @@ const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false }) => 
 
   return (
     <div className="mb-6">
-      {/* Day Header */}
-      <div 
-        className="flex items-center space-x-3 cursor-pointer mb-4"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm">
-          {dayNumber}
-        </div>
-        <h4 className="text-lg font-semibold">
-          {dayData?.title || `Day ${dayNumber}`}
-        </h4>
-        {expanded ? (
-          <ChevronDown className="h-5 w-5 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
-        )}
-        {/* Day summary info */}
-        {dayData && (
-          <div className="ml-auto text-sm text-muted-foreground">
-            {steps.length} activities
-          </div>
-        )}
+      <div className="flex items-center space-x-3 cursor-pointer mb-4" onClick={() => setExpanded(!expanded)}>
+        <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm">{dayNumber}</div>
+        <h4 className="text-lg font-semibold">{dayData?.title || `Day ${dayNumber}`}</h4>
+        {expanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
+        {dayData && <div className="ml-auto text-sm text-muted-foreground">{steps.length} activities</div>}
       </div>
 
-      {/* Timeline Steps */}
       {expanded && (
         <div className="ml-4 space-y-4">
-          {steps && steps.length > 0 ? (
+          {steps.length > 0 ? (
             steps.map((step, index) => (
-              <div key={step.id || index} className="relative">
-                {/* Connecting Line */}
-                {index < steps.length - 1 && (
+              <div key={step.id || index} className="relative" onClick={() => (step.category === 'visit' && onStepClick?.(step))}>
+                                 {/* Connecting Line */}
+                  {index < steps.length - 1 && (
                   <div className="absolute left-2 top-10 w-0.5 h-16 bg-border" />
                 )}
                 
@@ -126,16 +112,11 @@ const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false }) => 
                     {formatCost(step.cost)}
                   </Badge>
                 </div>
-              </div>
+                </div>
             ))
           ) : (
-            <div className="text-center py-4 text-muted-foreground">
-              <p>No activities planned for this day</p>
-            </div>
+            <div className="text-center py-4 text-muted-foreground">No activities planned for this day</div>
           )}
-          
-          {/* Add Step Button */}
-         
         </div>
       )}
     </div>

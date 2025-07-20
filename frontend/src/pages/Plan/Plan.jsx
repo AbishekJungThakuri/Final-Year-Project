@@ -5,58 +5,38 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { fetchPlanByIdThunk } from "../../features/plan/AiplanSlice";
 
 const Plan = () => {
   const { id: planId } = useParams();
   const dispatch = useDispatch();
   const { data: plan, generateStatus, editStatus, loading, error } = useSelector((state) => state.plan);
-
+  const [activeSidebarComponent, setActiveSidebarComponent] = useState("chat");
+  const [selectedPlace, setSelectedPlace] = useState(null);
+  
+  
   useEffect(() => {
     if (planId) {
       dispatch(fetchPlanByIdThunk(planId));
     }
   }, [dispatch, planId]);
 
-  // Loading state
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-lg">Loading your travel plan...</p>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-background flex items-center justify-center">Loading your travel plan...</div>;
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg text-red-600">Error loading plan: {error}</p>
-          <Button onClick={() => dispatch(fetchPlanByIdThunk(planId))} className="mt-4">
-            Try Again
-          </Button>
-        </div>
+        <p className="text-lg text-red-600">Error loading plan: {error}</p>
+        <Button onClick={() => dispatch(fetchPlanByIdThunk(planId))} className="mt-4">Try Again</Button>
       </div>
     );
   }
 
-  // No plan found
-  if (!plan) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg">Plan not found</p>
-        </div>
-      </div>
-    );
-  }
+  if (!plan) return <div className="min-h-screen bg-background flex items-center justify-center">Plan not found</div>;
 
-  // Create itinerary card data from plan
   const itineraryData = {
     title: plan.title || "Trip Plan",
     description: plan.description || "Your amazing travel itinerary",
@@ -73,54 +53,50 @@ const Plan = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="flex" style={{ height: 'calc(100vh - 60px)' }}>
-        {/* Left Section - 60% */}
         <div className="w-[55%] bg-travel-gray/30 overflow-y-auto">
           <div className="p-6">
-            {/* Itinerary Card */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-6">Your Itinerary</h2>
               <ItineraryCard {...itineraryData} />
             </div>
-
-            {/* Day Timeline */}
             <div className="bg-white rounded-lg shadow-sm p-6">
               <h2 className="text-2xl font-bold mb-6">Day by Day Timeline</h2>
-              
-              {/* Render each day */}
               {plan.days && plan.days.length > 0 ? (
                 plan.days.map((day, dayIndex) => (
-                  <DayTimeline 
+                  <DayTimeline
                     key={day.id || dayIndex}
                     dayNumber={dayIndex + 1}
                     dayData={day}
                     steps={day.steps || []}
-                    isExpanded={dayIndex === 0} // First day expanded by default
+                    isExpanded={dayIndex === 0}
+                    onStepClick={(step) => {
+                      if (step.category === 'visit') {
+                        setSelectedPlace(step.place.id);
+                        setActiveSidebarComponent("details");
+                      }
+                    }}
                   />
                 ))
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No timeline data available</p>
-                </div>
+                <div className="text-center py-8 text-muted-foreground">No timeline data available</div>
               )}
-
-              {/* Action Buttons */}
               <div className="flex space-x-4 mt-8">
-                <Button className="flex-1" size="lg">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Add Next Day
-                </Button>
-                <Button variant="outline" className="flex-1" size="lg">
-                  <Plus className="h-5 w-5 mr-2" />
-                  Add Next Step
+                <Button className="flex-1" size="lg"><Plus className="h-5 w-5 mr-2" />Add Next Day</Button>
+                <Button variant="outline" className="flex-1" size="lg" onClick={() => setActiveSidebarComponent("add")}>
+                  <Plus className="h-5 w-5 mr-2" />Add Next Step
                 </Button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Section - 40% */}
         <div className="w-[45%] border-l border-border">
-          <RightSidebar plan={plan} />
+          <RightSidebar 
+            plan={plan} 
+            activeComponent={activeSidebarComponent} 
+            setActiveComponent={setActiveSidebarComponent} 
+            selectedPlace={selectedPlace}
+          />
         </div>
       </div>
     </div>
