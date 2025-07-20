@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, MapPin, Car, Camera, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, MapPin, Car, Camera, Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { useDispatch } from "react-redux";
 
-const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false, onStepClick }) => {
+const DayTimeline = ({ dayNumber, dayData, steps = [], isLastDay, isExpanded = false, onStepClick}) => {
   const [expanded, setExpanded] = useState(isExpanded);
   
+  console.log(isLastDay)
   
-     const getStepIcon = (type) => {
+  const getStepIcon = (type) => {
     switch (type?.toLowerCase()) {
       case 'transport': return <Car className="h-4 w-4 text-travel-blue" />;
       case 'activity': return <Camera className="h-4 w-4 text-travel-green" />;
@@ -17,7 +16,6 @@ const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false, onSte
     }
   };
 
-  const dispatch = useDispatch();
 
   const getStepColor = (type) => {
     switch (type?.toLowerCase()) {
@@ -111,6 +109,16 @@ const DayTimeline = ({ dayNumber, dayData, steps = [], isExpanded = false, onSte
                   <Badge variant="outline" className="text-travel-blue border-travel-blue">
                     {formatCost(step.cost)}
                   </Badge>
+
+                  {/* Delete Button - Only show on the last step */}
+                  { (isLastDay && index === steps.length - 1) &&(
+                    <button
+                      className="w-8 h-8 cursor-pointer rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center transition-colors"
+                      title="Delete this step"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
                 </div>
             ))

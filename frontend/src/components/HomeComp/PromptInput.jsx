@@ -25,7 +25,7 @@ const PromptInput = () => {
 
   useEffect(() => {
     if (generateStatus === 'succeeded' && plan?.id) {
-      navigate(`/edit/${plan.id}`);
+      navigate(`/plan/${plan.id}`);
     }
   }, [generateStatus, plan, navigate]);
 

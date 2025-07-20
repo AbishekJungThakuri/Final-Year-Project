@@ -15,12 +15,27 @@ const Plan = () => {
   const [activeSidebarComponent, setActiveSidebarComponent] = useState("chat");
   const [selectedPlace, setSelectedPlace] = useState(null);
   
-  
   useEffect(() => {
     if (planId) {
       dispatch(fetchPlanByIdThunk(planId));
     }
   }, [dispatch, planId]);
+
+  // Enhanced setActiveComponent to handle place selection from RightSidebar
+  const handleSetActiveComponent = (componentId, placeId = null) => {
+    if (placeId !== null) {
+      setSelectedPlace(placeId);
+    }
+    setActiveSidebarComponent(componentId);
+  };
+
+  // Handle step click from itinerary timeline
+  const handleStepClick = (step) => {
+    if (step.category === 'visit') {
+      setSelectedPlace(step.place.id);
+      setActiveSidebarComponent("details");
+    }
+  };
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading your travel plan...</div>;
@@ -69,12 +84,8 @@ const Plan = () => {
                     dayData={day}
                     steps={day.steps || []}
                     isExpanded={dayIndex === 0}
-                    onStepClick={(step) => {
-                      if (step.category === 'visit') {
-                        setSelectedPlace(step.place.id);
-                        setActiveSidebarComponent("details");
-                      }
-                    }}
+                    onStepClick={handleStepClick}
+                    isLastDay={dayIndex === plan.days.length - 1}
                   />
                 ))
               ) : (
@@ -94,7 +105,7 @@ const Plan = () => {
           <RightSidebar 
             plan={plan} 
             activeComponent={activeSidebarComponent} 
-            setActiveComponent={setActiveSidebarComponent} 
+            setActiveComponent={handleSetActiveComponent} 
             selectedPlace={selectedPlace}
           />
         </div>
