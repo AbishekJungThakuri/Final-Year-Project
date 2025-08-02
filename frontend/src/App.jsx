@@ -18,6 +18,7 @@ function AppLayout() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/plan/:id" element={<Plan/>} />
+        <Route path="/plan" element={<Plan/>} />
       </Routes>
     </>
   );

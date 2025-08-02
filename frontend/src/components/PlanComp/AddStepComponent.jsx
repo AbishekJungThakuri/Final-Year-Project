@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Search, MapPin, Clock, Plus, Car, Camera, Loader2, ChevronDown, Route } from "lucide-react";
-
-import { fetchPlacesThunk, fetchCitiesThunk } from '../../features/plan/LocationSlice';
+import { Search, MapPin, Clock, Plus, Car, Camera, Loader2, ChevronDown, Route, X, Filter } from "lucide-react";
+import {Button} from "@/components/ui/button";
+import { fetchPlacesThunk, fetchNearestCitiesThunk, fetchCitiesThunk } from '../../features/plan/LocationSlice';
 import { addStepThunk } from '../../features/plan/AiplanSlice';
 
-const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
+const AddStepComponent = ({ planId, setActiveComponent, addStepData }) => {
   
   const dispatch = useDispatch();
   
@@ -18,14 +18,31 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
   // Local state
   const [category, setCategory] = useState('visit');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedCity, setSelectedCity] = useState();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+
+  const [addCityId, setAddCityId] = useState(null);
+  const [addPlaceId, setAddPlaceId] = useState(null);
+  const [addPlaceActivityId, setAddPlaceActivityId] = useState(null);
   
   // Pagination state
-  const [placesDisplayCount, setPlacesDisplayCount] = useState(5);
-  const [citiesDisplayCount, setCitiesDisplayCount] = useState(5);
-  const ITEMS_PER_PAGE = 5;
+  const [placesDisplayCount, setPlacesDisplayCount] = useState(10);
+  const [citiesDisplayCount, setCitiesDisplayCount] = useState(10);
+  const ITEMS_PER_PAGE = 10;
+
+  // Initialize city filter from addStepData
+  useEffect(() => {
+    if (addStepData?.cityId) {
+      setSelectedCity(addStepData.cityId);
+      setSearchTerm('');
+    }
+  }, [addStepData]);
+  
+  const formatTime = (duration) => `${duration} hours`;
+  const capitalize = (text) => text.charAt(0).toUpperCase() + text.slice(1);
+  const formatCost = (cost) => `NPR ${cost}`;
 
   useEffect(() => {
     if (category === 'visit') {
@@ -38,19 +55,29 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
         order: 'asc'
       }));
     } else if (category === 'transport') {
-      dispatch(fetchCitiesThunk({
-        search: searchTerm,
-        page: 1,
-        size: citiesDisplayCount
-      }));
+      if (!selectedCity) {
+        dispatch(fetchCitiesThunk({
+          search: searchTerm,
+          page: 1,
+          size: citiesDisplayCount
+        }));
+      }
+      else{
+        dispatch(fetchNearestCitiesThunk({
+          search: searchTerm,
+          page: 1,
+          size: citiesDisplayCount,
+          city_id: selectedCity ? parseInt(selectedCity) : null
+        }));
+      }
     }
   }, [category, searchTerm, selectedCity, placesDisplayCount, citiesDisplayCount]);
 
   
   // Reset display count when category or search changes
   useEffect(() => {
-    setPlacesDisplayCount(5);
-    setCitiesDisplayCount(5);
+    setPlacesDisplayCount(10);
+    setCitiesDisplayCount(10);
   }, [category, searchTerm, selectedCity]);
 
   // Get displayed items based on current display count
@@ -64,32 +91,47 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
   const handleLoadMoreCities = () => {
     setCitiesDisplayCount(prev => prev + ITEMS_PER_PAGE);
   };
+
+  // Handle removing city filter
+  const handleRemoveCityFilter = () => {
+    setSelectedCity(null);
+    setSearchTerm('');
+  };
   
   // Handle place click to show details
   const handlePlaceClick = (placeId) => {
     // Set the selected place in the parent component
     if (setActiveComponent) {
-      // Pass the place ID to the parent and switch to details view
-      setActiveComponent('details', placeId);
+      setActiveComponent('details', {category: 'place', id: placeId});
     }
   };
 
-  const handleAddStep = async (itemId, itemType) => {
+
+
+  const handleAddStep = async (itemId, itemType, placeActivityId = null) => {
     setError(null);
     setLoading(true);
 
     try {
       await dispatch(
         addStepThunk({
-          planId,
+          planId: planId,
+          dayId: addStepData.dayId,
+          index: addStepData.index,
           category: itemType,
-          placeId: itemType === 'visit' ? itemId : null,
-          endCityId: itemType === 'transport' ? itemId : null,
+          placeId: itemType === "visit" ? itemId : null,
+          cityId: itemType === "transport" ? itemId: null,
+          placeActivityId: itemType === "activity" ? placeActivityId : null
         })
       ).unwrap();
       
-      // Show success message or close modal
-      if (onClose) onClose();
+      // If transport was added, set it as the next city filter
+      if (itemType === 'transport') {
+        setSelectedCity(itemId);
+        setSearchTerm('');
+        setCategory('visit'); // Switch to visit category after transport
+      }
+
     } catch (err) {
       setError(err.message || 'Failed to add step');
     }
@@ -102,6 +144,13 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
       case 'visit': return <MapPin className="h-5 w-5" />;
       default: return <Camera className="h-5 w-5" />;
     }
+  };
+
+  // Get city name for filter display
+  const getSelectedCityName = () => {
+    if (!selectedCity) return null;
+    const city = cities.find(c => c.id === parseInt(selectedCity));
+    return city?.name || `City ${selectedCity}`;
   };
 
   return (
@@ -122,10 +171,13 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
           {/* Category Selection */}
           <div className="flex space-x-4 mb-4">
             <button
-              onClick={() => setCategory('visit')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+              onClick={() => {
+                setCategory('visit');
+                setSearchTerm('');
+              }}
+              className={`flex cursor-pointer items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                 category === 'visit'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -133,10 +185,13 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
               <span>Visit Places</span>
             </button>
             <button
-              onClick={() => setCategory('transport')}
-              className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+              onClick={() => {
+                setCategory('transport')
+                setSearchTerm('');
+              }}
+              className={`flex cursor-pointer items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
                 category === 'transport'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-primary text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -152,8 +207,15 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
               type="text"
               placeholder={category === 'visit' ? "Search places..." : "Search cities..."}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              onChange={(e) =>{
+                setSearchTerm(e.target.value);
+                if(e.target.value?.length > 0){
+                  setSelectedCity(null);
+                }else{
+                  setSelectedCity(addStepData.cityId || addStepData.cityId);
+                }
+              }}
+              className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary focus:ring"
             />
           </div>
         </div>
@@ -161,100 +223,168 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
         {/* Loading State */}
         {(placesLoading || citiesLoading) && (
           <div className="text-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
             <p className="mt-2 text-gray-600">Loading {category === 'visit' ? 'places' : 'cities'}...</p>
           </div>
         )}
 
-        {/* Places Grid - for Visit category */}
-        {category === 'visit' && !placesLoading && (
+        {(category === 'visit' || category === 'activity') && !placesLoading && (
           <div className="space-y-6">
             {displayedPlaces.length > 0 ? (
               <>
                 {displayedPlaces.map((place) => (
-                  <div key={place.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                    <div className="p-4 flex items-center space-x-4">
-                      {/* Left: Image - Make clickable */}
-                      <div 
-                        onClick={() => handlePlaceClick(place.id)}
-                        className="cursor-pointer"
-                      >
-                        <img
-                          src={place.images?.[0]?.url}
-                          alt={place.name}
-                          className="w-28 h-20 rounded-lg object-cover shadow-sm hover:opacity-80 transition-opacity"
-                        />
-                      </div>
-                  
-                      {/* Middle: Title + Meta - Make clickable */}
-                      <div 
-                        className="flex-1 space-y-2 cursor-pointer hover:text-blue-600 transition-colors"
-                        onClick={() => handlePlaceClick(place.id)}
-                      >
-                        {/* Title */}
-                        <h4 className="text-lg font-semibold text-gray-900 leading-snug break-words">
-                          {place.name}
-                        </h4>
-                  
-                        {/* Meta: Category, City, Duration */}
-                        <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <div className="flex items-center space-x-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{place.city?.name || "City"}</span>
+                  <div key={place.id} className="space-y-2">
+                    {/* Place Card */}
+                    <div className="bg-white m-1 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                      <div className="p-1 flex items-center space-x-4">
+                        <div 
+                          onClick={() => handlePlaceClick(place.id)}
+                          className="cursor-pointer"
+                        >
+                          <img
+                            src={place.images?.[0]?.url}
+                            alt={place.name}
+                            className="w-32 h-24 rounded-lg object-cover shadow-sm hover:opacity-80 transition-opacity"
+                          />
+                        </div>
+                    
+                        <div 
+                          className="flex-1 space-y-2 cursor-pointer hover:text-primary transition-colors"
+                          onClick={() => handlePlaceClick(place.id)}
+                        >
+                          {/* Title */}
+                          <h4 className="text-md mb-0 font-semibold text-gray-900 leading-snug break-words">
+                            {place.name}
+                          </h4>
+                    
+                          {/* Meta: Category, City, Duration */}
+                          <div className="flex items-center space-x-4 text-sm text-gray-500">
+                            <div className="text-sm flex items-center flex-wrap">
+                              <span>{capitalize(place.category)}</span>
+                              <div className="w-1 h-1 rounded-full bg-muted-foreground mx-2" />
+                              <span>{place.city.name}</span>
+                              <div className="w-1 h-1 rounded-full bg-muted-foreground mx-2" />
+                              <span>{formatTime(place.average_visit_duration)}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Clock className="h-4 w-4" />
-                            <span>
-                              {place.average_visit_duration
-                                ? `${place.average_visit_duration} hour${place.average_visit_duration > 1 ? "s" : ""}`
-                                : "2-3 hours"}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                              {place.category || "Place"}
-                            </span>
-                          </div>
+                    
+                        {/* Right: Buttons */}
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddStep(place.id, 'visit');
+                            }}
+                            disabled={loading}
+                            className="h-6 mr-2 px-3 text-xs border-0 bg-black text-white cursor-pointer hover:bg-black/80 hover:text-white/100"
+                          >
+                            {loading ? (
+                              <Loader2 className="h-2 w-2 animate-spin" />
+                            ) : (
+                              <Plus className="h-1 w-1 scale-75" />
+                            )}
+                            Add to plan
+                          </Button>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlaceClick(place.id);
+                            }}
+                            className="h-6 px-3 text-xs border-0 bg-black text-white cursor-pointer hover:bg-black/80 hover:text-white/100"
+                          >
+                            <MapPin className="h-1 w-1 scale-75" />
+                            View map
+                          </Button>
                         </div>
                       </div>
-                  
-                      {/* Right: Add Step button */}
-                      <div className="flex-shrink-0">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation(); // Prevent triggering place click
-                            handleAddStep(place.id, 'visit');
-                          }}
-                          disabled={loading}
-                          className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
-                        >
-                          {loading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Plus className="h-4 w-4" />
-                          )}
-                          <span>Add Step</span>
-                        </button>
-                      </div>
                     </div>
+
+                    {/* Activities Section */}
+                    {place.place_activities && place.place_activities.length > 0 && (
+                      <div className="ml-8 space-y-2">
+                        <div className="text-sm font-medium text-gray-600 mb-2">Activities:</div>
+                        {place.place_activities.map((placeActivity) => (
+                          <div key={placeActivity.id} className="bg-white m-1 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                            <div className="p-1 flex items-center space-x-4">
+                              <div className="shrink-0">
+                                <img
+                                  src={placeActivity.activity.image?.url}
+                                  alt={placeActivity.activity.name}
+                                  className="w-32 h-24 rounded-lg object-cover shadow-sm"
+                                />
+                              </div>
+                              
+                              <div className="flex-1 space-y-2">
+                                {/* Activity Title */}
+                                <h5 className="text-md mb-0 font-semibold text-gray-900 leading-snug break-words">
+                                  {placeActivity.title}
+                                </h5>
+                                
+                                {/* Activity Meta */}
+                                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                                  <div className="text-sm flex items-center flex-wrap">
+                                    <span>{placeActivity.activity.name}</span>
+                                    <div className="w-1 h-1 rounded-full bg-muted-foreground mx-2" />
+                                    <span>{formatCost(placeActivity.average_cost)}</span>
+                                    <div className="w-1 h-1 rounded-full bg-muted-foreground mx-2" />
+                                    <span>{formatTime(placeActivity.average_duration)}</span>
+                                  </div>
+                                </div>
+                              
+                                {/* Add Activity Button */}
+                                <Button
+                                  onClick={() => handleAddStep(place.id, 'activity', placeActivity.id)}
+                                  disabled={loading}
+                                  className="h-6 px-3 text-xs border-0 bg-black text-white cursor-pointer hover:bg-black/80 hover:text-white/100"
+                                >
+                                  {loading ? (
+                                    <Loader2 className="h-2 w-2 animate-spin" />
+                                  ) : (
+                                    <Plus className="h-1 w-1 scale-75" />
+                                  )}
+                                  Add Activity
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>                
                 ))}
                 
-                {/* Load More Button for Places */}
+                {/* View All / Load More Button for Places */}
                 <div className="text-center py-4">
-                  <button
-                    onClick={handleLoadMorePlaces}
-                    className="flex items-center space-x-2 px-6 py-3 mx-auto bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm"
-                  >
-                    <ChevronDown className="h-4 w-4" />
-                    <span>Load More</span>
-                  </button>
+                  {selectedCity ? (
+                    <button
+                      onClick={handleRemoveCityFilter}
+                      className="flex items-center space-x-2 px-6 py-3 mx-auto bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors font-medium shadow-sm"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      <span>View All Places</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleLoadMorePlaces}
+                      className="flex items-center space-x-2 px-6 py-3 mx-auto bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium shadow-sm"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                      <span>Load More</span>
+                    </button>
+                  )}
                 </div>
               </>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <MapPin className="h-12 w-12 mx-auto text-gray-300 mb-4" />
                 <p>No places found matching your search.</p>
+                {selectedCity && (
+                  <button
+                    onClick={handleRemoveCityFilter}
+                    className="mt-4 text-primary hover:text-primary/80 cursor-pointer underline  font-medium"
+                  >
+                    Try viewing all places
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -269,23 +399,13 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
                   <div key={city.id} className="bg-white rounded-lg shadow-sm p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center">
+                        <div className="w-12 h-12 bg-gradient-to-br from-primary/60 to-primary rounded-lg flex items-center justify-center">
                           <Car className="h-6 w-6 text-white" />
                         </div>
                         <div>
                         <div className="text-base text-gray-800">
                           <p>
-                            Travel to <span className="font-semibold">{city.name}</span>
-                          </p>
-                          <p className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
-                            <span className="flex items-center space-x-1">
-                              <Route className="h-4 w-4" />
-                              <span>{city.distance || "40"} km</span>
-                            </span>
-                            <span className="flex items-center space-x-1">
-                              <Clock className="h-4 w-4" />
-                              <span>{city.duration || "2-3"} hours</span>
-                            </span>
+                            Travel to <br/> <span className="font-semibold">{city.name}</span>
                           </p>
                         </div>
                         </div>
@@ -293,7 +413,7 @@ const AddStepComponent = ({ planId, onClose, setActiveComponent }) => {
                       <button
                         onClick={() => handleAddStep(city.id, 'transport')}
                         disabled={loading}
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+                        className="flex cursor-pointer items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/80 transition-colors font-medium disabled:opacity-50"
                       >
                         {loading ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

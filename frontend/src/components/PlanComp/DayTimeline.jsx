@@ -1,132 +1,185 @@
+import {
+  MapPin,
+  Car,
+  Compass,
+  Plus,
+  Trash,
+  Hotel
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { ChevronDown, ChevronRight, MapPin, Car, Camera, Plus, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
-const DayTimeline = ({ dayNumber, dayData, steps = [], isLastDay, isExpanded = false, onStepClick}) => {
-  const [expanded, setExpanded] = useState(isExpanded);
-  
-  console.log(isLastDay)
-  
-  const getStepIcon = (type) => {
-    switch (type?.toLowerCase()) {
-      case 'transport': return <Car className="h-4 w-4 text-travel-blue" />;
-      case 'activity': return <Camera className="h-4 w-4 text-travel-green" />;
-      case 'visit': return <MapPin className="h-4 w-4 text-travel-purple" />;
-      default: return <MapPin className="h-4 w-4" />;
+const DayTimeline = ({
+  dayNumber,
+  dayData,
+  steps = [],
+  addStepData,
+  onSetActiveComponent,
+  onStepRemove,
+  onTitleEdit,
+  isEditable = true,
+  onViewMap = null,
+  prevCityId = null
+  }) => {
+        
+    const getStepIcon = (type) => {
+      switch (type?.toLowerCase()) {
+        case "transport":
+          return <Car className="h-4 w-4" />;
+        case "activity":
+          return <Compass className="h-4 w-4" />;
+        case "visit":
+          return <MapPin className="h-4 w-4" />;
+        default:
+          return <MapPin className="h-4 w-4" />;
+      }
+    };
+
+  const formatTime = (step) => `${step.duration} hours`;
+  const formatCost = (cost) =>
+    cost ? `NPR ${cost.toLocaleString()}` : "NPR 0";
+  const getStepImage = (step) => step.image?.url || null;
+
+  const handleStepClick = (step) => {
+    if (step.category === "visit") {
+      onSetActiveComponent('details', {category: 'place', id: step.place.id});
+    }
+    else if (step.category === "activity") {
+      onSetActiveComponent('details', {category: 'place', id: step.place_activity.place_id});
+    }
+    else if (step.category === "transport") {
+      onSetActiveComponent('recommand', {category: 'transport', planDayStepId: step.id});
     }
   };
 
-
-  const getStepColor = (type) => {
-    switch (type?.toLowerCase()) {
-      case 'transport': return 'bg-travel-blue';
-      case 'activity': return 'bg-travel-green';
-      case 'visit': return 'bg-travel-purple';
-      default: return 'bg-gray-400';
-    }
-  };
-
-  // Format time if available
-  const formatTime = (step) => {
-    // You can customize this based on your time format
-    return step.time || `Step ${step.index + 1}`;
-  };
-
-  // Format cost
-  const formatCost = (cost) => {
-    return cost ? `Rs ${cost}` : '$0';
-  };
-
-  // Get step image
-  const getStepImage = (step) => {
-    if (step.image?.url) {
-      return step.image.url;
-    }
-    return null;
+  const handleAccomodationClick = (dayId) => {
+    onSetActiveComponent('recommand', {category: 'accommodation', planDayId: dayId});
   };
 
   return (
     <div className="mb-6">
-      <div className="flex items-center space-x-3 cursor-pointer mb-4" onClick={() => setExpanded(!expanded)}>
-        <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm">{dayNumber}</div>
-        <h4 className="text-lg font-semibold">{dayData?.title || `Day ${dayNumber}`}</h4>
-        {expanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-        {dayData && <div className="ml-auto text-sm text-muted-foreground">{steps.length} activities</div>}
+      <div className="flex items-center space-x-3">
+        <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm">
+          {dayNumber}
+        </div>
+        <div
+          contentEditable={isEditable}
+          suppressContentEditableWarning
+          spellCheck={false}
+          onBlur={(e) => {
+            const newTitle = e.target.textContent.trim();
+            if (newTitle && newTitle !== dayData?.title) {
+              onTitleEdit?.(dayData.id, newTitle);
+            }
+          }}
+          className={`text-lg font-semibold outline-none border-b border-transparent ${
+            isEditable ? "cursor-text" : "cursor-default"
+          }`}
+        >
+          {dayData?.title || `Day ${dayNumber}`}
+        </div>
+
+        <div className="ml-auto text-sm text-muted-foreground">
+          {(steps.length > 0)?
+            <div>
+              <Button size="sm" onClick={() => handleAccomodationClick(dayData.id)}>
+                Accomodations
+                <Hotel className="w-3 h-3 ml-1" />
+              </Button>
+            </div> :
+            "No steps yet"
+          }
+        </div>
       </div>
 
-      {expanded && (
-        <div className="ml-4 space-y-4">
-          {steps.length > 0 ? (
-            steps.map((step, index) => (
-              <div key={step.id || index} className="relative" onClick={() => (step.category === 'visit' && onStepClick?.(step))}>
-                                 {/* Connecting Line */}
-                  {index < steps.length - 1 && (
-                  <div className="absolute left-2 top-10 w-0.5 h-16 bg-border" />
-                )}
-                
-                {/* Step Card */}
-                <div className="flex items-center space-x-4 bg-white rounded-lg shadow-sm border border-border p-4 hover:shadow-md transition-shadow">
-                  {/* Timeline Dot */}
-                  <div className={`w-4 h-4 rounded-full ${getStepColor(step.category)} flex-shrink-0`} />
-                  
-                  {/* Step Image */}
-                  {getStepImage(step) && (
-                    <img 
-                      src={getStepImage(step)}
-                      alt={step.title}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                  )}
-                  
-                  {/* Step Content */}
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      {getStepIcon(step.category)}
-                      <h5 className="font-medium">{step.title}</h5>
-                    </div>
-                    
-                    {/* Location info */}
-                    {step.city_end?.name && (
-                      <p className="text-sm text-muted-foreground mb-1">
-                        📍 {step.city_start?.name} → {step.city_end?.name}
-                      </p>
-                    )}
-                    
-                    {/* Time */}
-                    <p className="text-sm text-muted-foreground">
-                      {formatTime(step)}
-                    </p>
-                    
-                    {/* Route hops for transport */}
-                    {step.route_hops && step.route_hops.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {step.route_hops.length} stops
-                      </p>
-                    )}
-                  </div>
-                  
-                  {/* Cost */}
-                  <Badge variant="outline" className="text-travel-blue border-travel-blue">
-                    {formatCost(step.cost)}
-                  </Badge>
+      <div className="ml-4 space-y-4 mt-4 relative">
+        {steps.map((step, i) => (
+          <div key={step.id}>
+          <div className="flex justify-center my-0 relative" >
+            {isEditable && (
+            <Button
+              variant="outline"
+              size="sm"
+              className={`absolute opacity-0 z-10 -top-6 w-50 border-2 cursor-pointer text-muted-foreground shadow-md hover:opacity-100 ${
+                addStepData?.index === step.index ? "border-foreground/50 text-foreground opacity-100" : ""
+              }`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSetActiveComponent("add", { index: step.index, dayId: dayData.id, cityId: (i>=1 ? steps[i-1].city.id : prevCityId) });
+              }}
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Step
+            </Button>
+            )}
+          </div>
+          <div
+            className="relative cursor-pointer group flex bg-white rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden"
+            onClick={() => handleStepClick(step)}
+          >
+            {/* Image - Full left side with 16:9 aspect ratio */}
+            {getStepImage(step) && (
+              <div className="w-32 flex-shrink-0">
+                <img
+                  src={getStepImage(step)}
+                  alt={step.title}
+                  className="w-full h-full object-cover"
+                  style={{ aspectRatio: '16/9' }}
+                />
+              </div>
+            )}
 
-                  {/* Delete Button - Only show on the last step */}
-                  { (isLastDay && index === steps.length - 1) &&(
-                    <button
-                      className="w-8 h-8 cursor-pointer rounded-full bg-red-100 hover:bg-red-200 text-red-600 flex items-center justify-center transition-colors"
-                      title="Delete this step"
+            {/* Content */}
+            <div className="flex-1 p-4 space-y-2">
+              {/* Title */}
+              <div className="text-base flex items-center gap-2 font-semibold mb-0">
+                {getStepIcon(step.category)}
+                {step.title}
+              </div>
+
+              {/* Category + Time + Cost */}
+              <div className="text-sm flex items-center flex-wrap">
+                <span>{formatTime(step)}</span>
+                <div className="w-1 h-1 rounded-full bg-muted-foreground mx-2" />
+                <span>{formatCost(step.cost)}</span>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-3 text-xs border-0 bg-black text-white cursor-pointer hover:bg-black/80 hover:text-white/100"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewMap?.();
+                  }}
+                >
+                  <MapPin className="h-1 w-1 scale-75" />
+                  View Map
+                </Button>
+                
+                {(isEditable && step.can_delete)&& (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 px-3 text-xs text-muted-foreground hover:text-red-600 border-muted-foreground/30 hover:border-red-400"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStepRemove?.(step.id);
+                      }}
                     >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-                </div>
-            ))
-          ) : (
-            <div className="text-center py-4 text-muted-foreground">No activities planned for this day</div>
-          )}
-        </div>
-      )}
+                      <Trash className="w-3 h-3 mr-1" />
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

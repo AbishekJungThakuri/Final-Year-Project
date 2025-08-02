@@ -39,10 +39,29 @@ export const fetchPlacesThunk = createAsyncThunk(
 // Existing fetchCitiesThunk
 export const fetchCitiesThunk = createAsyncThunk(
   'location/fetchCities',
-  async ({ search = '', page = 1, size = 5 } = {}, { rejectWithValue }) => {
+  async ({ search = ''  , page = 1, size = 5 } = {}, { rejectWithValue }) => {
     try {
       const res = await axios.get('/cities', {
         params: {
+          search,
+          page,
+          size
+        }
+      });
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+// Existing fetchCitiesThunk
+export const fetchNearestCitiesThunk = createAsyncThunk(
+  'location/fetchNearestCities',
+  async ({city_id  , page = 1, size = 5,  search = '' } = {}, { rejectWithValue }) => {
+    try {
+      const res = await axios.get('/cities/nearest', {
+        params: {
+          city_id,
           search,
           page,
           size
@@ -91,6 +110,18 @@ const LocationSlice = createSlice({
         state.cities = action.payload;
       })
       .addCase(fetchCitiesThunk.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      .addCase(fetchNearestCitiesThunk.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(fetchNearestCitiesThunk.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.cities = action.payload;
+      })
+      .addCase(fetchNearestCitiesThunk.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
       })
