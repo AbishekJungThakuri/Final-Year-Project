@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchAllPlansThunk } from '../../features/plan/AiplanSlice';
+import { fetchAllPlansThunk } from '../../features/plan/PlanSlice';
 import { useNavigate } from 'react-router-dom';
 import PlanCard from '../../components/HomeComp/PlanCard';
 import PromptInput from '../../components/HomeComp/PromptInput';

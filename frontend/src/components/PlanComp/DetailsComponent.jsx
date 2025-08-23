@@ -4,7 +4,7 @@ import { fetchPlaceByIdThunk } from "../../features/plan/LocationSlice";
 import { fetchRecommandedTransport } from "../../features/service/TransportSlice";
 import { fetchRecommandedAccommodation } from "../../features/service/AccommodationSlice";
 import { Bed, Clock, MapPin, Coins, BusFront, Ruler } from "lucide-react";
-import ImageCarousel from "../ui/imageCarousel"; // You need to implement this
+import ImageCarousel from "../ui/imageCarousel"; 
 
 const DetailsComponent = ({ detailsData }) => {
   const dispatch = useDispatch();

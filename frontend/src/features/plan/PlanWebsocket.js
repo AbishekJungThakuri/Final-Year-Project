@@ -1,5 +1,4 @@
-import { setPlanFromSocket, markPlanGenerationComplete } from "./AiplanSlice";
-import { addChatMessage } from "./chatSlice";
+import { setPlanFromSocket, markPlanGenerationComplete } from "./PlanSlice";
 
 let socket = null;
 
@@ -40,10 +39,6 @@ export function connectToPlanWebSocket(dispatch, prompt, token) {
         case "completed":
           console.log("[WS] Generation completed");
           dispatch(markPlanGenerationComplete());
-
-          if (data.response?.message) {
-            dispatch(addChatMessage({sender: "ai", message: data.response.message}));
-          }
 
           if (socket) {
             socket.close();

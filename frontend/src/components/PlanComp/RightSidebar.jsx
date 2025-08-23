@@ -1,8 +1,8 @@
-import { Plus, Info, MessageCircle, HotelIcon } from "lucide-react";
+import { Plus, Info, Map, HotelIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AddStepComponent from "./AddStepComponent";
+import MapComponent from "./MapComponent";
 import DetailsComponent from "./DetailsComponent";
-import ChatComponent from "./ChatComponent";
 import RecommandComponent from "./RecommandComponent"
 import { useState, useEffect } from "react";
 
@@ -12,15 +12,19 @@ const RightSidebar = ({
   setActiveComponent, 
   addStepData, 
   detailsData, 
-  chatData,
-  recommandData
+  mapData,
+  recommandData,
+  isEditable,
 }) => {
   const navigationItems = [
-    { id: 'chat', icon: MessageCircle, clickable: true, label: 'Chat', data: chatData },
+    {id: 'map', icon: Map, clickable: true, label: 'Map', data: null},
     { id: 'add', icon: Plus, clickable: true, label: 'Add Step', data: addStepData },
     { id: 'details', icon: Info, clickable: false, label: 'Details', data: detailsData },
     {id: 'recommand', icon: HotelIcon, clickable: false, label: 'Recommand', data: recommandData},
   ];
+  if (!isEditable) {
+    navigationItems.splice(1, 1);
+  }
 
   // Enhanced setActiveComponent to handle place selection
   const handleSetActiveComponent = (componentId, data) => {
@@ -45,21 +49,30 @@ const RightSidebar = ({
             setActiveComponent={handleSetActiveComponent}
           />
         );
-      case 'chat':
-        return <ChatComponent 
-          planId={plan_id}
-        />;
       case 'recommand':
-        return <RecommandComponent 
-          planId={plan_id}
-          setActiveComponent={handleSetActiveComponent}
-          recommandData={recommandData}
-        />
-        
+        return (
+          <RecommandComponent 
+            planId={plan_id}
+            recommandData={recommandData}
+            setActiveComponent={handleSetActiveComponent}
+          />
+        );
+      
+      case 'map':
+        return (
+          <MapComponent 
+            planId={plan_id}
+            mapData={mapData}
+            setActiveComponent={handleSetActiveComponent}
+          />
+        );
+      
       default:
         return (
-          <ChatComponent 
-            planId={plan_id} 
+          <MapComponent 
+            planId={plan_id}
+            mapData={mapData}
+            setActiveComponent={handleSetActiveComponent}
           />
         );
     }

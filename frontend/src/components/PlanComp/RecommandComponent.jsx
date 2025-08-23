@@ -86,29 +86,11 @@ const RecommandComponent = ({ planId, setActiveComponent, recommandData }) => {
           
           {/* Right: Buttons */}
           <Button
-            onClick={(e) => {
-              e.stopPropagation();
-            //   handleAddToPlan(accommodation);
-            }}
             disabled={loading}
             className="h-6 mr-2 px-3 text-xs border-0 bg-black text-white cursor-pointer hover:bg-black/80 hover:text-white/100"
           >
-            {loading ? (
-              <Loader2 className="h-2 w-2 animate-spin" />
-            ) : (
-              <Plus className="h-1 w-1 scale-75" />
-            )}
-            Details
-          </Button>
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleCardClick(accommodation);
-            }}
-            className="h-6 px-3 text-xs border-0 bg-black text-white cursor-pointer hover:bg-black/80 hover:text-white/100"
-          >
             <MapPin className="h-1 w-1 scale-75" />
-            View map
+            View Details
           </Button>
         </div>
       </div>
@@ -172,7 +154,7 @@ const RecommandComponent = ({ planId, setActiveComponent, recommandData }) => {
             className="h-6 px-3 text-xs border-0 bg-black text-white cursor-pointer hover:bg-black/80 hover:text-white/100"
           >
             <MapPin className="h-1 w-1 scale-75" />
-            View map
+            View details
           </Button>
         </div>
       </div>

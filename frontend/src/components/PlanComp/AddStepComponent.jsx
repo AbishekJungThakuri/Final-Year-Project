@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Search, MapPin, Clock, Plus, Car, Camera, Loader2, ChevronDown, Route, X, Filter } from "lucide-react";
 import {Button} from "@/components/ui/button";
 import { fetchPlacesThunk, fetchNearestCitiesThunk, fetchCitiesThunk } from '../../features/plan/LocationSlice';
-import { addStepThunk } from '../../features/plan/AiplanSlice';
+import { addStepThunk } from '../../features/plan/PlanSlice';
 
 const AddStepComponent = ({ planId, setActiveComponent, addStepData }) => {
   
@@ -118,6 +118,7 @@ const AddStepComponent = ({ planId, setActiveComponent, addStepData }) => {
           planId: planId,
           dayId: addStepData.dayId,
           index: addStepData.index,
+          nextStepId: addStepData.nextStepId,
           category: itemType,
           placeId: itemType === "visit" ? itemId : null,
           cityId: itemType === "transport" ? itemId: null,
@@ -136,21 +137,6 @@ const AddStepComponent = ({ planId, setActiveComponent, addStepData }) => {
       setError(err.message || 'Failed to add step');
     }
     setLoading(false);
-  };
-
-  const getCategoryIcon = (cat) => {
-    switch (cat) {
-      case 'transport': return <Car className="h-5 w-5" />;
-      case 'visit': return <MapPin className="h-5 w-5" />;
-      default: return <Camera className="h-5 w-5" />;
-    }
-  };
-
-  // Get city name for filter display
-  const getSelectedCityName = () => {
-    if (!selectedCity) return null;
-    const city = cities.find(c => c.id === parseInt(selectedCity));
-    return city?.name || `City ${selectedCity}`;
   };
 
   return (
@@ -292,7 +278,7 @@ const AddStepComponent = ({ planId, setActiveComponent, addStepData }) => {
                             className="h-6 px-3 text-xs border-0 bg-black text-white cursor-pointer hover:bg-black/80 hover:text-white/100"
                           >
                             <MapPin className="h-1 w-1 scale-75" />
-                            View map
+                            View Details
                           </Button>
                         </div>
                       </div>

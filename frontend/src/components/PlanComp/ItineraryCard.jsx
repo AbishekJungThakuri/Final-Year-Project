@@ -3,14 +3,11 @@ import {
   Star,
   Users,
   Calendar,
-  DollarSign,
-  Lock,
   User,
   Bookmark,
   MoreVertical,
   Copy,
   Trash2,
-  SquarePen,
   Repeat,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -253,20 +250,6 @@ const ItineraryCard = ({
                     onCheckedChange={handlePrivateToggle}
                   />
                 </div>
-
-                {isPrivatePlan && (
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start gap-2 text-left"
-                    onClick={() =>
-                      navigator.clipboard.writeText(
-                        `${window.location.origin}/plan/${id}`
-                      )
-                    }
-                  >
-                    <Copy className="h-4 w-4" /> Private Link
-                  </Button>
-                )}
               </>
             )}
             <Button

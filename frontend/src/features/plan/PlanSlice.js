@@ -136,13 +136,13 @@ export const addDayThunk = createAsyncThunk(
 // Add a new step to a specific day
 export const addStepThunk = createAsyncThunk(
   'plan/addStep',
-  async ({planId,  dayId, category, index, placeId, placeActivityId, cityId }, { rejectWithValue }) => {
+  async ({planId,  dayId, category, nextStepId, placeId, placeActivityId, cityId }, { rejectWithValue }) => {
     try {
       const payload = { 
         plan_id: planId,
         plan_day_id: dayId,
         category,
-        index,
+        next_plan_day_step_id: nextStepId,
         place_id: placeId,
         place_activity_id: placeActivityId,
         city_id: cityId
@@ -186,6 +186,20 @@ export const deleteStepThunk = createAsyncThunk(
   }
 );
 
+
+// Reorder step
+export const reorderStepThunk = createAsyncThunk(
+  'plan/reorderStep',
+  async ({ stepId, nextStepId }, { rejectWithValue }) => {
+    try {
+      const res = await axios.put(`/plan-day-steps/${stepId}`, { next_step_id: nextStepId });
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
 // UPDATE day title
 export const updateDayThunk = createAsyncThunk(
   'plan/updateDay',
@@ -203,7 +217,7 @@ export const updateDayThunk = createAsyncThunk(
 
 
 // Slice
-const AiplanSlice = createSlice({
+const PlanSlice = createSlice({
   name: 'plan',
   initialState: {
     data: null,           // current selected/generated plan
@@ -307,6 +321,13 @@ const AiplanSlice = createSlice({
         }
       })
 
+      // Reorder Step
+      .addCase(reorderStepThunk.fulfilled, (state, action) => {
+        if (state.data?.days) {
+          state.data = action.payload;
+        }
+      })
+
       // Update Day Title
       .addCase(updateDayThunk.fulfilled, (state, action) => {
         if (state.data?.days) {
@@ -330,6 +351,6 @@ const AiplanSlice = createSlice({
   },
 });
 
-export const { setPlanFromSocket, markPlanGenerationComplete, setGenerationInProgress } = AiplanSlice.actions;
-export default AiplanSlice.reducer;
+export const { setPlanFromSocket, markPlanGenerationComplete, setGenerationInProgress } = PlanSlice.actions;
+export default PlanSlice.reducer;
 
