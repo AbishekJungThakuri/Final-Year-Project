@@ -4,7 +4,7 @@ export default function Navbar() {
 
 
   return (
-    <nav className="flex justify-between items-center px-6 py-4 shadow-md">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-6 py-4 bg-white">
       <div className="text-xl font-bold">
         <span className="text-red-500">Holiday</span>Nepal
       </div>

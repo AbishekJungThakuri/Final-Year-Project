@@ -1,36 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Generate a new plan
-export const generatePlanThunk = createAsyncThunk(
-  'plan/generate',
-  async (prompt, { rejectWithValue }) => {
-    try {
-      const res = await axios.post('/ai/generate-plan', null, {
-        params: { prompt },
-      });
-      return res.data.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
-    }
-  }
-);
-
-// Edit an existing plan with prompt
-export const editPlanThunk = createAsyncThunk(
-  'plan/edit',
-  async ({ planId, prompt }, { rejectWithValue }) => {
-    try {
-      const res = await axios.put(`/ai/edit-plan/${planId}`, null, {
-        params: { prompt },
-      });
-      return res.data.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
-    }
-  }
-);
-
 // Get all plans
 export const fetchAllPlansThunk = createAsyncThunk(
   'plan/fetchAll',
@@ -77,12 +47,25 @@ export const updatePlanThunk = createAsyncThunk(
   async ({ planId, data }, { rejectWithValue }) => {
     try {
       const res = await axios.put(`/plans/${planId}`, data);
-      return res.data;
+      return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
   }
 );
+
+// Update plan via form partial
+export const updatePlanPartialThunk = createAsyncThunk(
+  'plan/updatePartial',
+  async ({ planId, data }, { rejectWithValue }) => {
+    try {
+      const res = await axios.patch(`/plans/${planId}`, data);
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+)
 
 // Duplicate a plan
 export const duplicatePlanThunk = createAsyncThunk(
@@ -98,18 +81,50 @@ export const duplicatePlanThunk = createAsyncThunk(
   }
 );
 
+// Toggle save
+export const toggleSaveThunk = createAsyncThunk(
+  "plan/toggleSave",
+  async (planId, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(`/plans/${planId}/toggle-save`);
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+)
+
+// Rate plan
+export const ratePlanThunk = createAsyncThunk(
+  "plan/rate",
+  async ({ planId, rating }, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(`/plans/${planId}/rate`, null, {params: { rating : rating }});
+      return res.data.data.rating;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+)
+
+export const removeRatingThunk = createAsyncThunk(
+  "plan/removeRating",
+  async (planId, { rejectWithValue }) => {
+    try {
+      const res = await axios.delete(`/plans/${planId}/rate`);
+      return res.data.data.rating;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+)
 
 // Add a new day to a plan
 export const addDayThunk = createAsyncThunk(
   'plan/addDay',
-  async ({ planId, title }, { rejectWithValue }) => {
+  async ({ data }, { rejectWithValue }) => {
     try {
-      const res = await axios.post('/plan-days/', null, {
-        params: {
-          plan_id: planId,
-          title: title,
-        },
-      });
+      const res = await axios.post('/plan-days/', data );
       return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
@@ -121,14 +136,16 @@ export const addDayThunk = createAsyncThunk(
 // Add a new step to a specific day
 export const addStepThunk = createAsyncThunk(
   'plan/addStep',
-  async ({ planId, category, placeId, endCityId }, { rejectWithValue }) => {
+  async ({planId,  dayId, category, nextStepId, placeId, placeActivityId, cityId }, { rejectWithValue }) => {
     try {
-      const payload = {
+      const payload = { 
         plan_id: planId,
-        category: category,
-        place_id: category === 'visit' ? placeId: null,      
-        end_city_id: category === 'transport' ? endCityId : null, 
-        place_activity_id: null
+        plan_day_id: dayId,
+        category,
+        next_plan_day_step_id: nextStepId,
+        place_id: placeId,
+        place_activity_id: placeActivityId,
+        city_id: cityId
       };
       console.log('Sending payload:', JSON.stringify(payload, null, 2));
 
@@ -146,10 +163,10 @@ export const addStepThunk = createAsyncThunk(
 // DELETE a day
 export const deleteDayThunk = createAsyncThunk(
   'plan/deleteDay',
-  async ({ planId, dayId }, { rejectWithValue }) => {
+  async ({ dayId }, { rejectWithValue }) => {
     try {
-      await axios.delete('/plan-days/', { params: { plan_id: planId, plan_day_id: dayId } });
-      return dayId;
+      const res = await axios.delete(`/plan-days/${dayId}`, null);
+      return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
@@ -159,10 +176,24 @@ export const deleteDayThunk = createAsyncThunk(
 // DELETE a step
 export const deleteStepThunk = createAsyncThunk(
   'plan/deleteStep',
-  async ({ planId, stepId }, { rejectWithValue }) => {
+  async ({ stepId }, { rejectWithValue }) => {
     try {
-      await axios.delete('/plan-day-steps/', { params: { plan_id: planId, plan_day_step_id: stepId } });
-      return stepId;
+      const res = await axios.delete(`/plan-day-steps/${stepId}`);
+      return res.data.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+
+// Reorder step
+export const reorderStepThunk = createAsyncThunk(
+  'plan/reorderStep',
+  async ({ stepId, nextStepId }, { rejectWithValue }) => {
+    try {
+      const res = await axios.put(`/plan-day-steps/${stepId}`, { next_step_id: nextStepId });
+      return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
     }
@@ -172,9 +203,9 @@ export const deleteStepThunk = createAsyncThunk(
 // UPDATE day title
 export const updateDayThunk = createAsyncThunk(
   'plan/updateDay',
-  async ({ dayId, title }, { rejectWithValue }) => {
+  async ({ dayId, newTitle }, { rejectWithValue }) => {
     try {
-      const res = await axios.put(`/plan-days/${dayId}`, { title });
+      const res = await axios.put(`/plan-days/${dayId}`, { title: newTitle });
       return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message);
@@ -184,8 +215,9 @@ export const updateDayThunk = createAsyncThunk(
 
 
 
+
 // Slice
-const AiplanSlice = createSlice({
+const PlanSlice = createSlice({
   name: 'plan',
   initialState: {
     data: null,           // current selected/generated plan
@@ -195,37 +227,24 @@ const AiplanSlice = createSlice({
     fetchStatus: 'idle',
     error: null,
   },
-  reducers: {},
+  reducers: {
+    setPlanFromSocket: (state, action) => {
+      state.data = action.payload;
+      state.generateStatus = 'generating'; // new status while streaming
+    },
+    markPlanGenerationComplete: (state) => {
+      state.generateStatus = 'succeeded';
+    },
+    // Add this new action
+    setGenerationInProgress: (state) => {
+      console.log("GENERATION IN PROGRESS");
+      state.generateStatus = 'loading';
+      state.data = null;
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
-      // Generate
-      .addCase(generatePlanThunk.pending, (state) => {
-        state.generateStatus = 'loading';
-        state.error = null;
-      })
-      .addCase(generatePlanThunk.fulfilled, (state, action) => {
-        state.generateStatus = 'succeeded';
-        state.data = action.payload;
-      })
-      .addCase(generatePlanThunk.rejected, (state, action) => {
-        state.generateStatus = 'failed';
-        state.error = action.payload;
-      })
-
-      // Edit with prompt
-      .addCase(editPlanThunk.pending, (state) => {
-        state.editStatus = 'loading';
-        state.error = null;
-      })
-      .addCase(editPlanThunk.fulfilled, (state, action) => {
-        state.editStatus = 'succeeded';
-        state.data = action.payload;
-      })
-      .addCase(editPlanThunk.rejected, (state, action) => {
-        state.editStatus = 'failed';
-        state.error = action.payload;
-      })
-
       // Fetch All Plans
       .addCase(fetchAllPlansThunk.pending, (state) => {
         state.fetchStatus = 'loading';
@@ -240,16 +259,16 @@ const AiplanSlice = createSlice({
       })
 
       .addCase(fetchPlanByIdThunk.pending, (state) => {
-      state.fetchStatus = 'loading';
-     })
-    .addCase(fetchPlanByIdThunk.fulfilled, (state, action) => {
-    state.fetchStatus = 'succeeded';
-    state.data = action.payload;
-    } )
-   .addCase(fetchPlanByIdThunk.rejected, (state, action) => {
-    state.fetchStatus = 'failed';
-    state.error = action.payload;
-     })
+        state.fetchStatus = 'loading';
+      })
+      .addCase(fetchPlanByIdThunk.fulfilled, (state, action) => {
+      state.fetchStatus = 'succeeded';
+      state.data = action.payload;
+      } )
+    .addCase(fetchPlanByIdThunk.rejected, (state, action) => {
+      state.fetchStatus = 'failed';
+      state.error = action.payload;
+      })
 
       // Delete
       .addCase(deletePlanThunk.fulfilled, (state, action) => {
@@ -268,45 +287,70 @@ const AiplanSlice = createSlice({
         }
       })
 
+      // Partial Update
+      .addCase(updatePlanPartialThunk.fulfilled, (state, action) => {
+        state.data = action.payload;
+        const idx = state.list.findIndex((p) => p.id === action.payload.id);
+        if (idx !== -1) {
+          state.list[idx] = action.payload;
+        }
+      })
+
       // Duplicate
       .addCase(duplicatePlanThunk.fulfilled, (state, action) => {
         state.list.push(action.payload);
       })
 
       .addCase(addDayThunk.fulfilled, (state, action) => {
-  state.data = action.payload;
-})
-.addCase(addStepThunk.fulfilled, (state, action) => {
-  state.data = action.payload;
-})
+        state.data = action.payload;
+      })
+      .addCase(addStepThunk.fulfilled, (state, action) => {
+        state.data = action.payload;
+      })
       // Delete Day
       .addCase(deleteDayThunk.fulfilled, (state, action) => {
         if (state.data?.days) {
-          state.data.days = state.data.days.filter(day => day.id !== action.payload);
+          state.data = action.payload;
         }
       })
 
       // Delete Step
       .addCase(deleteStepThunk.fulfilled, (state, action) => {
         if (state.data?.days) {
-          state.data.days = state.data.days.map(day => ({
-            ...day,
-            steps: day.steps?.filter(step => step.id !== action.payload)
-          }));
+          state.data = action.payload;
+        }
+      })
+
+      // Reorder Step
+      .addCase(reorderStepThunk.fulfilled, (state, action) => {
+        if (state.data?.days) {
+          state.data = action.payload;
         }
       })
 
       // Update Day Title
       .addCase(updateDayThunk.fulfilled, (state, action) => {
-        const updatedDay = action.payload;
-        const dayIndex = state.data?.days?.findIndex(day => day.id === updatedDay.id);
-        if (dayIndex !== -1) {
-          state.data.days[dayIndex] = updatedDay;
+        if (state.data?.days) {
+          state.data = action.payload;
         }
-      });
+      })
+
+      .addCase(ratePlanThunk.fulfilled, (state, action) => {
+        if (state.data) {
+          state.data.rating = action.payload;
+        }
+      })
+
+      // Remove Rating
+      .addCase(removeRatingThunk.fulfilled, (state, action) => {
+        if (state.data) {
+          state.data.rating = action.payload;
+        }
+      })
 
   },
 });
 
-export default AiplanSlice.reducer;
+export const { setPlanFromSocket, markPlanGenerationComplete, setGenerationInProgress } = PlanSlice.actions;
+export default PlanSlice.reducer;
 

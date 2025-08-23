@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { generatePlanThunk } from '../../features/plan/AiplanSlice';
 
 const PromptInput = () => {
   const [input, setInput] = useState('');
@@ -11,23 +10,17 @@ const PromptInput = () => {
 
   const handleSubmit = () => {
     const trimmed = input.trim();
-    if (trimmed) {
-      dispatch(generatePlanThunk(trimmed));
-      setInput('');
-    }
+    if (!trimmed) return;
+  
+    const encodedPrompt = encodeURIComponent(trimmed);
+    navigate(`/plan?prompt=${encodedPrompt}`);
   };
-
+  
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       handleSubmit();
     }
   };
-
-  useEffect(() => {
-    if (generateStatus === 'succeeded' && plan?.id) {
-      navigate(`/plan/${plan.id}`);
-    }
-  }, [generateStatus, plan, navigate]);
 
   return (
     <div className="text-center mt-30">
