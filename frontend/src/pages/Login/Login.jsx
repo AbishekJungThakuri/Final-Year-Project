@@ -74,7 +74,7 @@ export const Login = () => {
         </div>
 
         {/* Login Button */}
-        <button className="w-full bg-red-500 text-white py-2 rounded-xl hover:bg-red-600 transition duration-200 mt-2">
+        <button className="w-full bg-black text-white py-2 rounded-xl hover:bg-red-600 transition duration-200 mt-2">
           Login
         </button>
 
@@ -87,7 +87,7 @@ export const Login = () => {
         {/* Sign Up */}
         <div className="text-center mt-6 text-sm text-gray-600">
           Don’t have an account ?
-          <span className="text-red-500 ml-1 hover:underline cursor-pointer">
+          <span onClick={()=>navigate('/signup')} className="text-red-500 ml-1 hover:underline cursor-pointer">
             Sign up
           </span>
         </div>

@@ -54,6 +54,7 @@ export const fetchCitiesThunk = createAsyncThunk(
     }
   }
 );
+
 // Existing fetchCitiesThunk
 export const fetchNearestCitiesThunk = createAsyncThunk(
   'location/fetchNearestCities',

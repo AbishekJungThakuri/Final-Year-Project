@@ -6,7 +6,7 @@ import Navbar from "./components/Navbar/Navbar";
 import { Home } from "./pages/Home/Home";
 import Plan from './pages/Plan/Plan'
 
-function AppLayout() {
+function AppLayout(){
   const location = useLocation();
   const hideNavbar = location.pathname === "/login" || location.pathname === "/signup";
 
@@ -24,7 +24,7 @@ function AppLayout() {
   );
 }
 
-function App() {
+function App(){
   return (
     <BrowserRouter>
       <AppLayout />
