@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 
-const PromptInput = () => {
+const PromptInput = ({ onSubmit }) => {
   const [input, setInput] = useState('');
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { data: plan, generateStatus } = useSelector((state) => state.plan);
+
 
   const handleSubmit = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
-  
-    const encodedPrompt = encodeURIComponent(trimmed);
-    navigate(`/plan?prompt=${encodedPrompt}`);
+    onSubmit(trimmed);  // 🔹 Call parent handler
   };
   
   const handleKeyDown = (e) => {

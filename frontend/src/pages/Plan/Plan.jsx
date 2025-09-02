@@ -56,7 +56,7 @@ const Plan = () => {
         navigate("/");
         return;
       }
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("accessToken");
       dispatch(setGenerationInProgress());
       const cleanup = connectToPlanWebSocket(dispatch, prompt, token);
       cleanupRef.current = cleanup;

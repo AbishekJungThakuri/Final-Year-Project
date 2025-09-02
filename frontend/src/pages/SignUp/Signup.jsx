@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import googlelogo from '../../assets/image/googlelogo.png';
-import bg_image from '../../assets/image/homepagebg.png';
+import googlelogo from '../../assets/images/googlelogo.png';
+import bg_image from '../../assets/images/homepagebg.png';
 import { fetchCitiesThunk } from '../../features/plan/LocationSlice';
 import VerifyEmailForm from '../../components/AuthComp/VerifyEmailForm';
 import { register } from '../../features/auth/registerAuth/registerSlice';
 import { useNavigate } from 'react-router-dom';
+import {getGoogleUrl} from '../../features/auth/loginAuth/authThunks'
 
 
 export const Signup = () => {
@@ -20,8 +21,12 @@ export const Signup = () => {
   const { cities, status } = useSelector((state) => state.location);
   const { loading, user, emailVerified, error } = useSelector((state) => state.register);
 
+  const { googleUrl } = useSelector((state) => state.auth);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    dispatch(getGoogleUrl());
+  }, [dispatch]);
 
   // Fetch cities on search
   useEffect(() => {
@@ -213,13 +218,19 @@ export const Signup = () => {
           </button>
 
           {/* Google Sign In */}
-          <button
+          {
+            googleUrl && (
+              <a href={googleUrl}>
+                      <button
             type="button"
             className="w-full mt-4 flex items-center justify-center border-2 border-gray-400 py-2 cursor-pointer rounded-full hover:bg-gray-100 transition duration-200 text-sm"
           >
             <img src={googlelogo} alt="Google logo" className="mr-2 w-5 h-5" />
             Signin with Google
           </button>
+              </a>
+            )
+          }
         </form>
       </div>
     </div>
