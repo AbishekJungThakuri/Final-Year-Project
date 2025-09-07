@@ -33,7 +33,7 @@ const AllActivities = () => {
     setLoading(true);
     try {
       const data = await getAllActivities({ size: pageSize, search });
-      setActivities(data);
+      setActivities(data.data);
     } catch (err) {
       setError('Failed to load activities');
     } finally {
@@ -72,7 +72,7 @@ const AllActivities = () => {
     try {
       let imageId = formData.image_id;
       if (selectedFile) {
-        const uploaded = await uploadImage(selectedFile, 'activities');
+        const uploaded = await uploadImage(selectedFile, 'activity');
         imageId = uploaded.id;
       }
       

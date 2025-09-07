@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { fetchSavedPlansThunk } from '../../features/plan/SavedPlanSlice';
 import { LoginModal } from '../../components/AuthComp/LoginModal';
 import PlansSection from '../../components/HomeComp/PlanSection';
-import { fetchAllPlansThunk } from '../../features/plan/PlanSlice';
 
-export const Package = () => {const [showLoginModal, setShowLoginModal] = useState(false);
+export const SavedPackage = () => {const [showLoginModal, setShowLoginModal] = useState(false);
   
   // Separate search and filter states for each section
   const [myPlansSearch, setMyPlansSearch] = useState('');
@@ -14,7 +14,7 @@ export const Package = () => {const [showLoginModal, setShowLoginModal] = useSta
   const dispatch = useDispatch();
   const navigate = useNavigate();
   
-  const { list: myPlans, page: myPage, size: mySize, total: myTotal, fetchStatus } = useSelector((state) => state.plan);
+  const { list: myPlans, page: myPage, size: mySize, total: myTotal, fetchStatus } = useSelector((state) => state.savedPlan);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
   // Helper function to get sort parameters from category
@@ -34,22 +34,16 @@ export const Package = () => {const [showLoginModal, setShowLoginModal] = useSta
 
   // Fetch user plans only if logged in
   useEffect(() => {
-      if (!isAuthenticated || !user?.id) return;
-  
-      const handler = setTimeout(() => {
-        const sortParams = getSortParams(myPlansCategory);
-        dispatch(
-          fetchAllPlansThunk({
-            page: 1,
-            size: 12,
-            search: myPlansSearch,
-            ...sortParams,
-          })
-        );
-      }, 500); // 500ms delay
-  
-      return () => clearTimeout(handler);
-    }, [myPlansSearch, myPlansCategory, isAuthenticated, user, dispatch]);
+    if (isAuthenticated && user?.id) {
+      const sortParams = getSortParams(myPlansCategory);
+      dispatch(fetchSavedPlansThunk({ 
+        page: 1, 
+        size: 12,
+        search: myPlansSearch,
+        ...sortParams
+      }));
+    }
+  }, [isAuthenticated, user, dispatch, myPlansSearch, myPlansCategory]);
 
   // Handle Plan Click
   const handlePlanClick = (planId) => {
@@ -62,6 +56,7 @@ export const Package = () => {const [showLoginModal, setShowLoginModal] = useSta
 
   // Handle pagination for my plans
   const handleMyPlansPageChange = (newPage) => {
+    if (isAuthenticated && user?.id) {
       const sortParams = getSortParams(myPlansCategory);
       dispatch(fetchMyPlansThunk({ 
         page: newPage, 
@@ -69,7 +64,7 @@ export const Package = () => {const [showLoginModal, setShowLoginModal] = useSta
         search: myPlansSearch,
         ...sortParams
       }));
-    
+    }
   };
 
   const closeModal = () => setShowLoginModal(false);
@@ -80,7 +75,7 @@ export const Package = () => {const [showLoginModal, setShowLoginModal] = useSta
         {isAuthenticated && (
           <div>
             <PlansSection
-              title="Community Plans"
+              title="Saved Plans"
               plans={myPlans}
               count={myTotal}
               currentPage={myPage}

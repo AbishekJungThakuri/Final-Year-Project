@@ -42,7 +42,7 @@ const PlanStepCard = ({
   };
 
   const prevCityId =
-    step.index > 0 ? allSteps[step.index - 1].city.id : planData.start_city.id;
+    step.index > 0 ? allSteps[step.index - 1].city.id : planData.start_city?.id;
   const getStepImage = (step) => step.image?.url || null;
   const formatTime = (step) => `${step.duration} hours`;
   const formatCost = (cost) =>

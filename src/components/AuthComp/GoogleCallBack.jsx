@@ -1,67 +1,52 @@
 // src/pages/GoogleCallbackPage.js
 import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import { googleCallback } from "../../features/auth/loginAuth/authThunks";
 
 const GoogleCallbackPage = () => {
   const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.auth);
 
   useEffect(() => {
     const code = searchParams.get("code");
     const error = searchParams.get("error");
 
     if (error) {
-      console.error("OAuth error:", error);
-      navigate("/login?error=oauth_failed");
+      // Notify parent and close
+      if (window.opener) {
+        window.opener.postMessage({ type: "OAUTH_ERROR", error }, "*");
+        window.close();
+      }
       return;
     }
 
     if (code) {
+      if (sessionStorage.getItem("google_callback_done")) return;
+      sessionStorage.setItem("google_callback_done", "true");
+
       dispatch(googleCallback(code))
         .unwrap()
         .then(() => {
-          navigate("/");
+          if (window.opener) {
+            window.opener.postMessage({ type: "OAUTH_SUCCESS" }, "*");
+            window.close();
+          }
         })
-        .catch((error) => {
-          console.error("Login failed:", error);
+        .catch((err) => {
+          console.error("Login failed:", err);
+          if (window.opener) {
+            window.opener.postMessage({ type: "OAUTH_ERROR", error: err }, "*");
+            window.close();
+          }
         });
     } else {
-      navigate("/login");
+      if (window.opener) {
+        window.opener.postMessage({ type: "OAUTH_ERROR", error: "NO_CODE" }, "*");
+        window.close();
+      }
     }
-  }, [searchParams, dispatch, navigate]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Logging in with Google...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p>Authentication failed. Please try again.</p>
-          </div>
-          <button 
-            onClick={() => navigate("/login")}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Back to Login
-          </button>
-        </div>
-      </div>
-    );
-  }
+  }, [searchParams, dispatch]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -71,3 +56,4 @@ const GoogleCallbackPage = () => {
 };
 
 export default GoogleCallbackPage;
+  

@@ -8,11 +8,11 @@ export const loginUser = createAsyncThunk(
   async ({ email_or_username, password }, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.post('/auth/login', { email_or_username, password });
-      const { access_token, refresh_token } = res.data.data;
+      const { access_token, role, user_id } = res.data.data;
 
-      // Store both tokens
       localStorage.setItem('accessToken', access_token);
-      localStorage.setItem('refreshToken', refresh_token);
+      localStorage.setItem('role', role);
+      localStorage.setItem('userId', user_id)
 
       // Set default Authorization header
       axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
@@ -29,15 +29,11 @@ export const logoutUser = createAsyncThunk(
   'auth/logoutUser',
   async (_, { rejectWithValue }) => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
+      await axiosInstance.delete('/auth/logout');
 
-      await axiosInstance.delete('/auth/logout', {
-        data: { refresh_token: refreshToken },
-      });
-
-      // Clear tokens
       localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('role');
+      localStorage.removeItem('userId');
       delete axiosInstance.defaults.headers.common['Authorization'];
 
       return true;
@@ -53,7 +49,6 @@ export const fetchUserProfile = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await axiosInstance.get('/auth/me');
-      // console.log(res.data.data)
       return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || { message: 'Failed to fetch user info' });
@@ -84,7 +79,21 @@ export const resetPassword = createAsyncThunk(
       );
       return res.data.message;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Something went wrong");
+      return rejectWithValue(error.response?.data?.detail || "Something went wrong");
+    }
+  }
+);
+
+export const changePassword = createAsyncThunk(
+  "auth/changePassword",
+  async ({ oldPassword, newPassword }, { rejectWithValue }) => {
+    try {
+      const res = await axiosInstance.post(
+        `/auth/change_password?old_password=${encodeURIComponent(oldPassword)}&new_password=${encodeURIComponent(newPassword)}`
+      );
+      return res.data.message;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.detail || "Something went wrong");
     }
   }
 );
@@ -114,11 +123,14 @@ export const googleCallback = createAsyncThunk(
         `/auth/oauth/google/callback?code=${code}`
       );
 
-      if (res.data.token) {
-        localStorage.setItem("token", res.data.token);
-      }
+      const { access_token, role, user_id } = res.data.data;
 
-      return res.data; // token or user data
+      localStorage.setItem("accessToken", access_token);
+      localStorage.setItem("role", role);
+      localStorage.setItem("userId", user_id);
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+      return res.data.data;
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
     }

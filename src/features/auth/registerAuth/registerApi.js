@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from '../../../services/axiosInstances';
 
 export const registerUser = async ({ username, email, password, city_id }) => {
   if (!city_id) throw new Error("City is required");

@@ -1,12 +1,11 @@
-import axios from 'axios';
-
+import axios from '../../services/axiosInstances';
 const BASE_URL = 'http://localhost:8000';
 
 // Valid parameter options for dropdown
 export const IMAGE_PARAMETERS = {
   USER_PROFILE: 'user_profile',
   PLACE: 'place',
-  ACTIVITIES: 'activities',
+  ACTIVITY: 'activity',
   SERVICES: 'services',
   OTHER: 'other'
 };
@@ -90,19 +89,18 @@ export const uploadImage = async (imageFile, parameter) => {
     
     // Validate parameter
     if (!Object.values(IMAGE_PARAMETERS).includes(parameter)) {
-      throw new Error('Invalid parameter. Must be one of: user_profile, place, activities, services, other');
+      throw new Error('Invalid parameter. Must be one of: user_profile, place, activity, services, other');
     }
     
     const formData = new FormData();
-    formData.append('image', imageFile);
-    formData.append('parameter', parameter);
+    formData.append('file', imageFile);
     
-    const response = await axios.post(`${BASE_URL}/images/`, formData, {
+    const response = await axios.post(`${BASE_URL}/images/?category=${parameter}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    return response.data;
+    return response.data.data;
   } catch (error) {
     console.error('API Error:', error.response?.data || error.message);
     throw error;

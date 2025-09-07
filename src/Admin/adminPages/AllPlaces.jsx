@@ -11,6 +11,7 @@ import {
   deleteImage
 } from '../api/images';
 import { Plus, X, Search, Trash2, Pencil, LayoutList, Grid3x3, Upload } from 'lucide-react';
+import Pagination from './Pagination';
 
 const AllPlaces = () => {
   const [places, setPlaces] = useState([]);
@@ -22,7 +23,7 @@ const AllPlaces = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    category: '',
+    categories: [],
     latitude: '',
     longitude: '',
     average_visit_duration: '',
@@ -32,16 +33,29 @@ const AllPlaces = () => {
   });
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
-  const [pageSize, setPageSize] = useState(50);
+  const [categoryInput, setCategoryInput] = useState('');
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
   const [search, setSearch] = useState('');
 
   const fetchPlaces = async () => {
     setLoading(true);
     try {
-      const data = await getAllPlaces({ size: pageSize, search });
-      setPlaces(data);
+      const data = await getAllPlaces({ 
+        size: pageSize, 
+        page: currentPage,
+        search 
+      });
+      setPlaces(data.data || []);
+      setTotalPages(Math.ceil(data.total / data.size) || 0);
+      setTotalItems(data.total || 0);
     } catch (err) {
       setError('Failed to load places');
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -49,13 +63,20 @@ const AllPlaces = () => {
 
   useEffect(() => {
     fetchPlaces();
-  }, [pageSize, search]);
+  }, [currentPage, pageSize, search]);
+
+  // Reset to first page when search or pageSize changes
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [search, pageSize]);
 
   const resetForm = () => {
     setFormData({
       name: '',
       description: '',
-      category: '',
+      categories: [],
       latitude: '',
       longitude: '',
       average_visit_duration: '',
@@ -65,6 +86,7 @@ const AllPlaces = () => {
     });
     setSelectedFiles([]);
     setImagePreviews([]);
+    setCategoryInput('');
     setEditingPlace(null);
     setShowForm(false);
   };
@@ -99,6 +121,30 @@ const AllPlaces = () => {
     }
   };
 
+  const handleAddCategory = () => {
+    if (categoryInput.trim() && !formData.categories.includes(categoryInput.trim())) {
+      setFormData({ 
+        ...formData, 
+        categories: [...formData.categories, categoryInput.trim()] 
+      });
+      setCategoryInput('');
+    }
+  };
+
+  const handleRemoveCategory = (categoryToRemove) => {
+    setFormData({
+      ...formData,
+      categories: formData.categories.filter(cat => cat !== categoryToRemove)
+    });
+  };
+
+  const handleCategoryInputKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddCategory();
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -125,7 +171,7 @@ const AllPlaces = () => {
     setFormData({
       name: place.name,
       description: place.description,
-      category: place.category,
+      categories: place.categories || [],
       latitude: place.latitude,
       longitude: place.longitude,
       average_visit_duration: place.average_visit_duration,
@@ -150,6 +196,15 @@ const AllPlaces = () => {
     }
   };
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -168,15 +223,6 @@ const AllPlaces = () => {
                   className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                {[10, 20, 50, 64, 100].map(size => (
-                  <option key={size} value={size}>{size} places</option>
-                ))}
-              </select>
               <button
                 onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}
                 className="px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
@@ -207,14 +253,6 @@ const AllPlaces = () => {
                   placeholder="Place Name" 
                   value={formData.name} 
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })} 
-                  className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" 
-                  required 
-                />
-                <input 
-                  type="text" 
-                  placeholder="Category" 
-                  value={formData.category} 
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })} 
                   className="px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" 
                   required 
                 />
@@ -257,6 +295,7 @@ const AllPlaces = () => {
                   required 
                 />
               </div>
+              
               <textarea 
                 placeholder="Description" 
                 value={formData.description} 
@@ -264,6 +303,47 @@ const AllPlaces = () => {
                 className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none h-24"
                 rows="3"
               />
+
+              {/* Categories Section */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700">Categories</label>
+                <div className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="Add category" 
+                    value={categoryInput}
+                    onChange={(e) => setCategoryInput(e.target.value)}
+                    onKeyPress={handleCategoryInputKeyPress}
+                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none" 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={handleAddCategory}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+                {formData.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.categories.map((category, index) => (
+                      <span 
+                        key={index}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                      >
+                        {category}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCategory(category)}
+                          className="hover:bg-blue-200 rounded-full p-0.5 ml-1"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
               
               {/* Image Upload Section */}
               <div className="space-y-3">
@@ -335,7 +415,7 @@ const AllPlaces = () => {
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categories</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
@@ -355,9 +435,16 @@ const AllPlaces = () => {
                         <div className="text-sm text-gray-500 truncate max-w-xs">{place.description}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                          {place.category}
-                        </span>
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {place.categories?.map((category, index) => (
+                            <span 
+                              key={index}
+                              className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                            >
+                              {category}
+                            </span>
+                          )) || <span className="text-gray-400 text-sm">No categories</span>}
+                        </div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
                         {place.latitude}, {place.longitude}
@@ -405,11 +492,23 @@ const AllPlaces = () => {
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-lg font-semibold text-gray-900 truncate">{place.name}</h3>
-                    <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full ml-2">
-                      {place.category}
-                    </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-3 line-clamp-2">{place.description}</p>
+                  
+                  {/* Categories */}
+                  {place.categories?.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {place.categories.map((category, index) => (
+                        <span 
+                          key={index}
+                          className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full"
+                        >
+                          {category}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  
                   <div className="space-y-1 text-sm text-gray-500 mb-4">
                     <div>📍 {place.latitude}, {place.longitude}</div>
                     {place.average_visit_duration && <div>⏱️ {place.average_visit_duration}</div>}
@@ -434,6 +533,17 @@ const AllPlaces = () => {
             ))}
           </div>
         )}
+
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          pageSizeOptions={[10, 20, 50, 100]}
+        />
 
         {/* Loading State */}
         {loading && (

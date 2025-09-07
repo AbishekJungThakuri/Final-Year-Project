@@ -13,7 +13,7 @@ export const verify = createAsyncThunk('auth/verify', async ({ email, otp }, thu
   try {
     return await verifyEmail({ email, otp });
   } catch (error) {
-    return thunkAPI.rejectWithValue(error.response?.data?.message || 'Verification failed');
+    return thunkAPI.rejectWithValue(error.response?.data?.detail || 'Verification failed');
   }
 });
 

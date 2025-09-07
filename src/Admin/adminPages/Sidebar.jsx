@@ -11,13 +11,10 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   // Define your menu items with paths
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
     { id: 'activities', label: 'All Activities', icon: Activity, path: '/allActivities' },
-    { id: 'users', label: 'All Users', icon: Users, path: '/allUsers' },
     { id: 'places', label: 'All Places', icon: MapPin, path: '/allPlaces' },
     { id: 'service-providers', label: 'Transport Providers', icon: Building, path: '/serviceProviders' },
     { id: 'accommodation-providers', label: 'Accommodation Providers', icon: Building, path: '/accommodationProviders' },
-    { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
   ];
 
   return (

@@ -1,16 +1,16 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axios from '../../services/axiosInstances';
 
 // Get all plans
 export const fetchAllPlansThunk = createAsyncThunk(
   'plan/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const res = await axios.get('/plans');
-      // console.log("Fetched plans", res.data);
-      return res.data;
+      const res = await axios.get('/plans', { params });
+      console.log("Fetched plans", res.data);
+      return res.data; // should include items, page, size, total
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -23,7 +23,7 @@ export const fetchPlanByIdThunk = createAsyncThunk(
       const res = await axios.get(`/plans/${planId}`);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -36,7 +36,7 @@ export const deletePlanThunk = createAsyncThunk(
       await axios.delete(`/plans/${planId}`);
       return planId;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -49,7 +49,7 @@ export const updatePlanThunk = createAsyncThunk(
       const res = await axios.put(`/plans/${planId}`, data);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -62,7 +62,7 @@ export const updatePlanPartialThunk = createAsyncThunk(
       const res = await axios.patch(`/plans/${planId}`, data);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 )
@@ -76,7 +76,7 @@ export const duplicatePlanThunk = createAsyncThunk(
       console.log("API duplicate response:", res.data); // Debug log
       return res.data.data; // Make sure backend returns duplicated plan here
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -89,7 +89,7 @@ export const toggleSaveThunk = createAsyncThunk(
       const res = await axios.post(`/plans/${planId}/toggle-save`);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 )
@@ -102,7 +102,7 @@ export const ratePlanThunk = createAsyncThunk(
       const res = await axios.post(`/plans/${planId}/rate`, null, {params: { rating : rating }});
       return res.data.data.rating;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 )
@@ -114,7 +114,7 @@ export const removeRatingThunk = createAsyncThunk(
       const res = await axios.delete(`/plans/${planId}/rate`);
       return res.data.data.rating;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 )
@@ -127,7 +127,7 @@ export const addDayThunk = createAsyncThunk(
       const res = await axios.post('/plan-days/', data );
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -153,7 +153,7 @@ export const addStepThunk = createAsyncThunk(
       return res.data.data;
     } catch (err) {
       console.error('Add step error:', err.response?.data?.detail || err.response?.data || err.message);
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -168,7 +168,7 @@ export const deleteDayThunk = createAsyncThunk(
       const res = await axios.delete(`/plan-days/${dayId}`, null);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -181,7 +181,7 @@ export const deleteStepThunk = createAsyncThunk(
       const res = await axios.delete(`/plan-day-steps/${stepId}`);
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -195,7 +195,7 @@ export const reorderStepThunk = createAsyncThunk(
       const res = await axios.put(`/plan-day-steps/${stepId}`, { next_step_id: nextStepId });
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -208,7 +208,7 @@ export const updateDayThunk = createAsyncThunk(
       const res = await axios.put(`/plan-days/${dayId}`, { title: newTitle });
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -221,7 +221,10 @@ const PlanSlice = createSlice({
   name: 'plan',
   initialState: {
     data: null,           // current selected/generated plan
-    list: [],             // all plans for home list
+    list: [], 
+    page: 1,
+    size: 10,
+    total: 0,            // all plans for home list
     generateStatus: 'idle',
     editStatus: 'idle',
     fetchStatus: 'idle',
@@ -251,8 +254,11 @@ const PlanSlice = createSlice({
       })
       .addCase(fetchAllPlansThunk.fulfilled, (state, action) => {
         state.fetchStatus = 'succeeded';
-        state.list = action.payload.data;
-      })
+        state.list = action.payload.data;  
+        state.page = action.payload.page;   
+        state.size = action.payload.size;   
+        state.total = action.payload.total; 
+      })      
       .addCase(fetchAllPlansThunk.rejected, (state, action) => {
         state.fetchStatus = 'failed';
         state.error = action.payload;
@@ -298,8 +304,10 @@ const PlanSlice = createSlice({
 
       // Duplicate
       .addCase(duplicatePlanThunk.fulfilled, (state, action) => {
-        state.list.push(action.payload);
-      })
+        const newPlan = action.payload; // the full duplicated plan from backend
+        state.data = newPlan;           // update currently selected plan
+        state.list.push(newPlan);       // add to list
+      })      
 
       .addCase(addDayThunk.fulfilled, (state, action) => {
         state.data = action.payload;
@@ -353,4 +361,3 @@ const PlanSlice = createSlice({
 
 export const { setPlanFromSocket, markPlanGenerationComplete, setGenerationInProgress } = PlanSlice.actions;
 export default PlanSlice.reducer;
-

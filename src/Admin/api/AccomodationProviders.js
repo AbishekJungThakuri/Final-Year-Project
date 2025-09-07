@@ -1,5 +1,4 @@
-import axios from 'axios';
-
+import axios from '../../services/axiosInstances';
 const BASE_URL = 'http://localhost:8000'; 
 
 export const getAllAccommodationServices = async ({
@@ -27,18 +26,18 @@ export const getAllAccommodationServices = async ({
     params.accommodation_category = accommodation_category;
   }
 
-  const response = await axios.get(`${BASE_URL}/accomodation-services/`, { params });
-  return response.data.data;
+  const response = await axios.get(`${BASE_URL}/accommodation-services/`, { params });
+  return response.data;
 };
 
 export const getAccommodationServiceById = async (accommodationServiceId) => {
-  const response = await axios.get(`${BASE_URL}/accomodation-services/${accommodationServiceId}`);
+  const response = await axios.get(`${BASE_URL}/accommodation-services/${accommodationServiceId}`);
   return response.data;
 };
 
 // Create an accommodation service
 export const createAccommodationService = async (accommodationServiceData) => {
-  const response = await axios.post(`${BASE_URL}/accomodation-services/`, {
+  const response = await axios.post(`${BASE_URL}/accommodation-services/`, {
     name: accommodationServiceData.name,
     description: accommodationServiceData.description,
     city_id: accommodationServiceData.city_id,
@@ -53,11 +52,11 @@ export const createAccommodationService = async (accommodationServiceData) => {
 };
 
 export const updateAccommodationService = async (accommodationServiceId, accommodationServiceData) => {
-  const response = await axios.put(`${BASE_URL}/accomodation-services/${accommodationServiceId}`, accommodationServiceData);
+  const response = await axios.put(`${BASE_URL}/accommodation-services/${accommodationServiceId}`, accommodationServiceData);
   return response.data;
 };
 
 export const deleteAccommodationService = async (accommodationServiceId) => {
-  const response = await axios.delete(`${BASE_URL}/accomodation-services/${accommodationServiceId}`);
+  const response = await axios.delete(`${BASE_URL}/accommodation-services/${accommodationServiceId}`);
   return response.data;
 };

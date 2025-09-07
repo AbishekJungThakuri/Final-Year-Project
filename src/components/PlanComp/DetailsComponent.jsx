@@ -62,8 +62,14 @@ const DetailsComponent = ({ detailsData }) => {
   const metaInfo = [];
 
   if (category === "place") {
+    data.categories.forEach(cat => {
+      metaInfo.push({
+        icon: "",
+        value: cat.charAt(0).toUpperCase() + cat.slice(1),
+      });
+    });
+    
     metaInfo.push(
-      { icon: "", value: data.category },
       {
         icon: <Coins className="w-4 h-4" />,
         value: `Rs. ${data.average_visit_cost}`,
@@ -73,6 +79,7 @@ const DetailsComponent = ({ detailsData }) => {
         value: `${data.average_visit_duration} hrs`,
       }
     );
+    
   } else if (category === "accommodation") {
     metaInfo.push(
       { icon: <Bed className="w-4 h-4" />, value: data.accommodation_category },

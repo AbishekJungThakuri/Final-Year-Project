@@ -1,5 +1,4 @@
-import axios from 'axios';
-
+import axios from '../../services/axiosInstances';
 const BASE_URL = 'http://localhost:8000'; 
 
 export const getAllPlaces = async ({
@@ -23,7 +22,7 @@ export const getAllPlaces = async ({
   }
 
   const response = await axios.get(`${BASE_URL}/places/`, { params });
-  return response.data.data;
+  return response.data;
 };
 
 export const getPlaceById = async (placeId) => {

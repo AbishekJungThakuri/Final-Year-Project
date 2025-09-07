@@ -36,7 +36,7 @@ const AddDayComponent = ({
         return steps[steps.length - 1].city.id; 
       }
     }
-    return planData.start_city.id;
+    return planData.start_city?.id;
   };
   const nextStepId = getNextStepId(planData, dayIndex + 1); 
   const prevCityId = getPrevCityId(planData, dayIndex);
@@ -90,6 +90,11 @@ const AddDayComponent = ({
                 type="text"
                 value={newDayTitle}
                 onChange={(e) => setNewDayTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newDayTitle.trim()) {
+                    handleAddDay(dayIndex !== -1 ? dayIndex : -1);
+                  }
+                }}
                 placeholder={`Enter title for Day ${dayIndex + 2}`}
                 className="w-full p-2 border rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-primary"
                 autoFocus

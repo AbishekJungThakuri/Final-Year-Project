@@ -3,10 +3,17 @@ import {
   getAllTransportServices,
   createTransportService,
   updateTransportService,
-  deleteTransportService
-} from '../api/ServiceProviders';
-import { uploadImage } from '../api/images';
-import { Plus, Trash2, Pencil, LayoutList, Grid3x3, Search, X } from 'lucide-react';
+  deleteTransportService,
+  uploadImage,
+  searchCities,
+  getRoutesByCity
+} from '../api/transportApi';
+import { Plus, Trash2, Pencil, LayoutList, Grid3x3, Search, X, ChevronRight } from 'lucide-react';
+import Pagination from './Pagination';
+
+const TransportCategories = [
+  'bus', 'taxi', 'bike', 'minibus', 'jeep', 'plane', 'helicopter', 'other'
+];
 
 const ServiceProvider = () => {
   const [services, setServices] = useState([]);
@@ -18,22 +25,36 @@ const ServiceProvider = () => {
   const [formData, setFormData] = useState({
     route_ids: [],
     description: '',
-    route_category: '',
+    route_category: 'road',
     transport_category: '',
     average_duration: '',
     cost: '',
     image_ids: []
   });
+
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
-  const fetchServices = async () => {
+  // New state for route selection
+  const [citySearch, setCitySearch] = useState('');
+  const [foundCities, setFoundCities] = useState([]);
+  const [selectedCity, setSelectedCity] = useState(null);
+  const [availableRoutes, setAvailableRoutes] = useState([]);
+  const [selectedRoutes, setSelectedRoutes] = useState([]);
+
+  const fetchServices = async (page = currentPage) => {
     setLoading(true);
     try {
-      const data = await getAllTransportServices({ size: pageSize, search });
-      setServices(data);
+      const data = await getAllTransportServices({ size: pageSize, search, page });
+      setServices(data.data);
+      setCurrentPage(data.page);
+      setTotalPages(Math.ceil(data.total / data.size));
+      setTotalItems(data.total);
     } catch (err) {
       setError('Failed to load transport services');
     } finally {
@@ -42,14 +63,132 @@ const ServiceProvider = () => {
   };
 
   useEffect(() => {
-    fetchServices();
-  }, [pageSize, search]);
+    fetchServices(currentPage);
+  }, [pageSize, search, currentPage]);
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (citySearch.length > 2) {
+        handleSearchCities(citySearch);
+      } else {
+        setFoundCities([]);
+      }
+    }, 500);
+    return () => clearTimeout(delayDebounceFn);
+  }, [citySearch]);
+
+  const handleSearchCities = async (query) => {
+    try {
+      const cities = await searchCities(query);
+      setFoundCities(cities.data);
+    } catch (err) {
+      console.error("Failed to search cities:", err);
+      setError('Failed to search for cities.');
+    }
+  };
+
+  const handleCitySelect = async (city) => {
+    setSelectedCity(city);
+    setCitySearch(city.name);
+    setFoundCities([]);
+    try {
+      const routes = await getRoutesByCity(city.id);
+      setAvailableRoutes(routes.data);
+    } catch (err) {
+      console.error("Failed to fetch routes:", err);
+      setError('Failed to fetch routes for selected city.');
+    }
+  };
+
+  const handleRouteSelect = (route) => {
+    const isNextRouteValid = (lastRoute, newRoute) => {
+      const isConnected = lastRoute.end_city.id === newRoute.start_city.id || lastRoute.end_city.id === newRoute.end_city.id;
+      return isConnected;
+    };
+    
+    // Determine the effective start and end city of the new route
+    let effectiveRoute = { ...route };
+    const lastRoute = selectedRoutes[selectedRoutes.length - 1];
+
+    if (selectedRoutes.length > 0) {
+      const currentEndCityId = lastRoute.end_city.id;
+      if (route.start_city.id === currentEndCityId) {
+        // Correct direction
+      } else if (route.end_city.id === currentEndCityId) {
+        // Reverse the route direction for the visual display
+        effectiveRoute = {
+          ...route,
+          start_city: route.end_city,
+          end_city: route.start_city
+        };
+      } else {
+        setError('The next route must connect to the end city of the previous route.');
+        return;
+      }
+    } else {
+      // First route must start from the selected city
+      if (route.start_city.id !== selectedCity.id) {
+        // If it doesn't, check if the end city matches
+        if (route.end_city.id === selectedCity.id) {
+          effectiveRoute = {
+            ...route,
+            start_city: route.end_city,
+            end_city: route.start_city
+          };
+        } else {
+          setError('The first route must either start or end at the selected city.');
+          return;
+        }
+      }
+    }
+    
+    if (!selectedRoutes.some(r => r.id === route.id)) {
+      setSelectedRoutes([...selectedRoutes, effectiveRoute]);
+      setAvailableRoutes(prevRoutes => prevRoutes.filter(r => r.id !== route.id));
+      setFormData(prevData => ({
+        ...prevData,
+        route_ids: [...prevData.route_ids, route.id]
+      }));
+    }
+
+    const nextCityId = effectiveRoute.end_city.id;
+    getRoutesByCity(nextCityId)
+      .then(res => setAvailableRoutes(res.data))
+      .catch(err => {
+        console.error("Failed to fetch next routes:", err);
+        setError('Failed to fetch next routes.');
+      });
+  };
+  
+  const handleRemoveRoute = (routeId) => {
+    const routeToRemove = selectedRoutes.find(r => r.id === routeId);
+    if (!routeToRemove) return;
+
+    const index = selectedRoutes.findIndex(r => r.id === routeId);
+    const newSelectedRoutes = selectedRoutes.slice(0, index);
+    setSelectedRoutes(newSelectedRoutes);
+    setFormData(prevData => ({
+      ...prevData,
+      route_ids: newSelectedRoutes.map(r => r.id)
+    }));
+    
+    const lastCityId = newSelectedRoutes.length > 0 ? newSelectedRoutes[newSelectedRoutes.length - 1].end_city.id : selectedCity.id;
+    getRoutesByCity(lastCityId)
+      .then(res => {
+        const removedRoutes = selectedRoutes.slice(index);
+        setAvailableRoutes(prevAvailable => [...res.data, ...removedRoutes]);
+      })
+      .catch(err => {
+        console.error("Failed to re-fetch routes:", err);
+        setError('Failed to refresh available routes.');
+      });
+  };
 
   const resetForm = () => {
     setFormData({
       route_ids: [],
       description: '',
-      route_category: '',
+      route_category: 'road',
       transport_category: '',
       average_duration: '',
       cost: '',
@@ -59,6 +198,12 @@ const ServiceProvider = () => {
     setImagePreviews([]);
     setEditingService(null);
     setShowForm(false);
+    
+    setCitySearch('');
+    setFoundCities([]);
+    setSelectedCity(null);
+    setAvailableRoutes([]);
+    setSelectedRoutes([]);
   };
 
   const handleImageChange = (e) => {
@@ -75,7 +220,12 @@ const ServiceProvider = () => {
         const res = await uploadImage(file, 'transport_services');
         imageIds.push(res.id);
       }
+      
       const payload = { ...formData, image_ids: imageIds };
+      payload.route_ids = payload.route_ids.map(Number);
+      payload.cost = Number(payload.cost) || 0;
+      payload.average_duration = Number(payload.average_duration) || 0;
+      
       if (editingService) {
         await updateTransportService(editingService.id, payload);
       } else {
@@ -89,10 +239,10 @@ const ServiceProvider = () => {
     }
   };
 
-  const handleEdit = (service) => {
+  const handleEdit = async (service) => {
     setEditingService(service);
     setFormData({
-      route_ids: service.route_ids || [],
+      route_ids: service.route_segments?.map(s => s.route.id) || [],
       description: service.description || '',
       route_category: service.route_category || '',
       transport_category: service.transport_category || '',
@@ -102,6 +252,27 @@ const ServiceProvider = () => {
     });
     setImagePreviews(service.images?.map(img => img.url) || []);
     setShowForm(true);
+
+    if (service.route_segments && service.route_segments.length > 0) {
+      const routesInOrder = service.route_segments
+        .sort((a, b) => a.index - b.index)
+        .map(s => s.route);
+
+      setSelectedRoutes(routesInOrder);
+      const firstCity = routesInOrder[0]?.start_city;
+      if (firstCity) {
+        setSelectedCity(firstCity);
+        setCitySearch(firstCity.name);
+        try {
+          const lastCityId = routesInOrder[routesInOrder.length - 1].end_city.id;
+          const newRoutes = await getRoutesByCity(lastCityId);
+          setAvailableRoutes(newRoutes.data.filter(r => !routesInOrder.some(sr => sr.id === r.id)));
+        } catch (err) {
+          console.error("Failed to load routes for editing:", err);
+          setError('Failed to load routes for editing.');
+        }
+      }
+    }
   };
 
   const handleDelete = async (id) => {
@@ -116,6 +287,15 @@ const ServiceProvider = () => {
     }
   };
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -128,7 +308,6 @@ const ServiceProvider = () => {
             </div>
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 <input
@@ -139,19 +318,15 @@ const ServiceProvider = () => {
                   className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all w-full sm:w-64"
                 />
               </div>
-              
-              {/* Page Size */}
               <select
                 value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
+                onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
               >
                 {[10, 20, 50, 64, 100].map(size => (
                   <option key={size} value={size}>{size} per page</option>
                 ))}
               </select>
-              
-              {/* View Toggle */}
               <button
                 onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}
                 className="px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2 bg-white"
@@ -159,8 +334,6 @@ const ServiceProvider = () => {
                 {viewMode === 'table' ? <Grid3x3 size={18} /> : <LayoutList size={18} />}
                 <span className="hidden sm:inline">{viewMode === 'table' ? 'Card' : 'Table'}</span>
               </button>
-              
-              {/* Add Button */}
               <button
                 onClick={() => setShowForm(true)}
                 className="flex items-center gap-2 bg-blue-600 text-white px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -185,22 +358,94 @@ const ServiceProvider = () => {
         {/* Form Modal */}
         {showForm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold text-gray-900">
                     {editingService ? 'Edit Service' : 'Add New Service'}
                   </h2>
-                  <button
-                    onClick={resetForm}
-                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
+                  <button onClick={resetForm} className="text-gray-400 hover:text-gray-600 transition-colors">
                     <X size={24} />
                   </button>
                 </div>
               </div>
               
               <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Route</label>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-4">
+                    
+                    {selectedRoutes.length > 0 && (
+                      <div className="flex items-center flex-wrap gap-2">
+                        {selectedRoutes.map((route, index) => (
+                          <div key={index} className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                            <span>{route.start_city.name} to {route.end_city.name}</span>
+                            <button type="button" onClick={() => handleRemoveRoute(route.id)} className="text-blue-500 hover:text-blue-700">
+                                <X size={14} />
+                            </button>
+                            {index < selectedRoutes.length - 1 && <ChevronRight size={16} className="text-blue-500" />}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="relative">
+                      {!selectedCity ? (
+                        <>
+                          <input
+                            type="text"
+                            value={citySearch}
+                            onChange={(e) => setCitySearch(e.target.value)}
+                            placeholder="Search for a starting city..."
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                          />
+                          {foundCities.length > 0 && (
+                            <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-lg mt-1 max-h-48 overflow-y-auto shadow-lg">
+                              {foundCities.map(city => (
+                                <li
+                                  key={city.id}
+                                  onClick={() => handleCitySelect(city)}
+                                  className="p-3 cursor-pointer hover:bg-gray-100 transition-colors"
+                                >
+                                  {city.name}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </>
+                      ) : (
+                        <div>
+                          <p className="text-sm font-medium text-gray-900 mb-2">
+                            Select a route from <span className="text-blue-600">{selectedCity.name}</span>:
+                          </p>
+                          {availableRoutes.length > 0 ? (
+                            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {availableRoutes.map(route => (
+                                <li
+                                  key={route.id}
+                                  onClick={() => handleRouteSelect(route)}
+                                  className="p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-blue-50 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-medium">
+                                        {route.start_city.name} to {route.end_city.name}
+                                    </span>
+                                    <span className="text-xs text-gray-500">{route.distance} km</span>
+                                  </div>
+                                  <span className="text-xs text-gray-500">Duration: {route.average_duration}h, Cost: ${route.average_cost}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-sm text-gray-500">No more connecting routes found from this location.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Other Form Fields */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                   <textarea
@@ -218,27 +463,31 @@ const ServiceProvider = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Route Category</label>
                     <input
                       type="text"
-                      placeholder="e.g., Urban, Rural"
-                      value={formData.route_category}
-                      onChange={(e) => setFormData({ ...formData, route_category: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      value="road"
+                      readOnly
+                      className="w-full border border-gray-300 rounded-lg p-3 bg-gray-100 text-gray-500 cursor-not-allowed"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Transport Category</label>
-                    <input
-                      type="text"
-                      placeholder="e.g., Bus, Train"
+                    <select
                       value={formData.transport_category}
                       onChange={(e) => setFormData({ ...formData, transport_category: e.target.value })}
-                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                    />
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+                      required
+                    >
+                      <option value="">Select a category</option>
+                      {TransportCategories.map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Average Duration</label>
                     <input
-                      type="text"
-                      placeholder="e.g., 2 hours"
+                      type="number"
+                      placeholder="e.g., 2.5"
+                      step="0.1"
                       value={formData.average_duration}
                       onChange={(e) => setFormData({ ...formData, average_duration: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
@@ -247,8 +496,9 @@ const ServiceProvider = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Cost</label>
                     <input
-                      type="text"
-                      placeholder="e.g., $25"
+                      type="number"
+                      placeholder="e.g., 25.00"
+                      step="0.01"
                       value={formData.cost}
                       onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
                       className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
@@ -300,7 +550,7 @@ const ServiceProvider = () => {
           </div>
         )}
 
-        {/* Content */}
+        {/* Content remains the same as before */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           {loading ? (
             <div className="flex items-center justify-center py-12">
@@ -453,6 +703,19 @@ const ServiceProvider = () => {
             </div>
           )}
         </div>
+        
+        {totalItems > 0 && (
+          <div className="mt-6 flex justify-center">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

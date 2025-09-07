@@ -1,5 +1,4 @@
-import axios from 'axios';
-
+import axios from '../../services/axiosInstances';
 const BASE_URL = 'http://localhost:8000'; 
 
 export const getAllActivities = async ({
@@ -18,7 +17,7 @@ export const getAllActivities = async ({
   };
 
   const response = await axios.get(`${BASE_URL}/activities/`, { params });
-  return response.data.data;
+  return response.data;
 };
 
 export const getActivityById = async (activityId) => {

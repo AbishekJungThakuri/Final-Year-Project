@@ -9,13 +9,47 @@ import {
   Copy,
   Trash2,
   Repeat,
+  Camera,
+  Upload,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { deletePlanThunk, duplicatePlanThunk } from "../../features/plan/PlanSlice";
+
+// Import the uploadImage action from your Redux slice
+import { uploadImage } from "../../features/image/imageSlice";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom"; // Add this import
 
 const formatCurrency = (amount) => `NPR. ${amount.toLocaleString("en-IN")}`;
+
+// Confirmation Modal Component
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirmText, confirmButtonClass }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-1000 bg-black/50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-lg pointer-events-auto">
+        <h3 className="text-lg font-semibold mb-4">{title}</h3>
+        <p className="text-gray-600 mb-6">{message}</p>
+        <div className="flex gap-3 justify-end">
+          <Button variant="outline" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button 
+            className={confirmButtonClass}
+            onClick={onConfirm}
+          >
+            {confirmText}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 
 const ItineraryCard = ({
   id,
@@ -49,8 +83,16 @@ const ItineraryCard = ({
   const [isVoated, setIsVoated] = useState(self_rate > 0);
   const [isPrivatePlan, setIsPrivatePlan] = useState(isPrivate);
   const [showOptions, setShowOptions] = useState(false);
-
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
+  const imageUploadLoading = false;
+  const fileInputRef = useRef(null);
+  const dispatch = useDispatch();
+  const navigate = useNavigate(); // Add this hook
+  
   useEffect(() => setSaved(savedProp), [savedProp]);
+
   const spanRef = useRef(null);
 
   const hasChanges =
@@ -166,10 +208,74 @@ const ItineraryCard = ({
   };
 
   const handleDuplicatePlan = async () => {
+    setShowDuplicateModal(true);
+  };
+
+  const confirmDuplicate = async () => {
+    setIsLoading(true);
+    setShowOptions(false);
     try {
-      await onUpdatePlan({ duplicate: true });
-    } catch (err) {
-      console.error("Failed to duplicate plan");
+      const result = await dispatch(duplicatePlanThunk(id)).unwrap();
+      console.log("Duplicate result:", result);
+      
+      navigate(`/plan/${result.id}`);
+    } catch (error) {
+      console.error("Failed to duplicate plan:", error);
+      // Optionally show an error message to user
+    } finally {
+      setIsLoading(false);
+      setShowDuplicateModal(false);
+    }
+  };
+
+  const handleDeletePlan = async () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    setIsLoading(true);
+    setShowOptions(false);
+    try {
+      await dispatch(deletePlanThunk(id)).unwrap();
+      // Navigate to home page
+      navigate('/');
+    } catch (error) {
+      console.error("Failed to delete plan:", error);
+      // Optionally show an error message to user
+    } finally {
+      setIsLoading(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const handleImageUpload = async (file) => {    
+    try {
+      // Import uploadImage action (you'll need to import this at the top of your component)
+      const uploadResult = await dispatch(uploadImage({ 
+        file, 
+        category: 'place' // or whatever category you want
+      })).unwrap();
+      
+      // For now, using a placeholder - uncomment above when you import uploadImage
+      console.log("File selected:", file.name);
+      
+      // Uncomment this when you have uploadImage imported:
+      await onUpdatePlan({ image_id: uploadResult.id });
+      
+      setShowImageUpload(false);
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+    }
+  };
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      handleImageUpload(file);
+    }
+    // Reset the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -195,197 +301,267 @@ const ItineraryCard = ({
     }
   }, [hasChanges]);
 
+  // Close options menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showOptions && !event.target.closest('.options-menu')) {
+        setShowOptions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showOptions]);
+
   return (
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden mb-6 border">
-      {/* Cover Image */}
-      <div className="relative h-48">
-        <img
-          src={imageUrl}
-          alt={title}
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+    <>
+      <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden mb-6 border">
+        {/* Cover Image */}
+        <div className="relative h-48 group">
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          
+          {/* Image Upload Overlay - Only show on hover and if editable */}
+          {editable && (
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={imageUploadLoading}
+                className="bg-white/20 cursor-pointer hover:bg-white/30 text-white rounded-full p-3 transition-all duration-200 flex items-center gap-2"
+              >
+                {imageUploadLoading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                ) : (
+                  <Camera className="h-5 w-5" />
+                )}
+                <span className="text-sm font-medium">Change Cover</span>
+              </button>
+            </div>
+          )}
+          
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
 
-        {/* Top-left: Save icon */}
-        <div className="absolute top-4 left-4">
-          <button
-            onClick={handleToggleSave}
-            disabled={isLoading}
-            className="bg-black/30 cursor-pointer rounded-full p-2 hover:bg-black/50"
-          >
-            <Bookmark
-              className={`h-4 w-4 ${
-                saved ? "text-yellow-400 fill-current" : "text-white"
-              }`}
-            />
-          </button>
-        </div>
-
-        {/* Top-right: Options */}
-        <div className="absolute top-4 right-4">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="bg-black/30 hover:bg-black/50 p-2 rounded-full text-white hover:text-white"
-            onClick={() => setShowOptions(!showOptions)}
-          >
-            <MoreVertical ertical className="h-4 w-4" />
-          </Button>
-        </div>
-        {showOptions && (
-          <div className="z-50 absolute right-4 top-15 bg-white border border-gray-200 rounded-md shadow-md top-10 w-40  p-2 space-y-2">
-            {isMyPlan && (
-              <>
-                <div className="flex pl-4 items-center justify-between">
-                  <span className="text-sm">Readonly</span>
-                  <Switch
-                    checked={!editable}
-                    onCheckedChange={() => changeIsEditable?.(!editable)}
-                  />
-                </div>
-                <div className="flex pl-4 items-center justify-between">
-                  <span className="text-sm">Private</span>
-                  <Switch
-                    checked={isPrivatePlan}
-                    onCheckedChange={handlePrivateToggle}
-                  />
-                </div>
-              </>
-            )}
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2 text-left"
-              onClick={() => onDuplicate?.(id)}
+          {/* Top-left: Save icon */}
+          <div className="absolute top-4 left-4">
+            <button
+              onClick={handleToggleSave}
+              disabled={isLoading}
+              className="bg-black/30 cursor-pointer rounded-full p-2 hover:bg-black/50"
             >
-              <Repeat className="h-4 w-4" /> Duplicate plan
-            </Button>
-            {isMyPlan && (  
-                <Button
-                variant="ghost"
-                className="w-full justify-start gap-2 text-left text-red-600 hover:text-red-700"
-                onClick={() => onDelete?.(id)}
-                >
-                <Trash2 className="h-4 w-4" /> Delete Plan
-              </Button>
-            )}
+              <Bookmark
+                className={`h-4 w-4 ${
+                  saved ? "text-yellow-400 fill-current" : "text-white"
+                }`}
+              />
+            </button>
           </div>
-        )}
 
-        <div className="absolute bottom-4 left-4">
+          {/* Top-right: Options */}
+          <div className="absolute top-4 right-4">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="bg-black/30 hover:bg-black/50 p-2 rounded-full text-white hover:text-white"
+              onClick={() => setShowOptions(!showOptions)}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+              ) : (
+                <MoreVertical className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+
+          {showOptions && (
+            <div className="options-menu z-50 absolute right-4 top-14 bg-white border border-gray-200 rounded-md shadow-lg w-44 p-2 space-y-2">
+              {isMyPlan && (
+                <>
+                  <div className="flex pl-4 items-center justify-between">
+                    <span className="text-sm">Readonly</span>
+                    <Switch
+                      checked={!editable}
+                      onCheckedChange={() => changeIsEditable?.(!editable)}
+                    />
+                  </div>
+                  <div className="flex pl-4 items-center justify-between">
+                    <span className="text-sm">Private</span>
+                    <Switch
+                      checked={isPrivatePlan}
+                      onCheckedChange={handlePrivateToggle}
+                    />
+                  </div>
+                </>
+              )}
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 text-left"
+                onClick={handleDuplicatePlan}
+                disabled={isLoading}
+              >
+                <Repeat className="h-4 w-4" /> Duplicate plan
+              </Button>
+              {isMyPlan && (  
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-2 text-left text-red-600 hover:text-red-700"
+                  onClick={handleDeletePlan}
+                  disabled={isLoading}
+                >
+                  <Trash2 className="h-4 w-4" /> Delete Plan
+                </Button>
+              )}
+            </div>
+          )}
+
+          <div className="absolute bottom-4 left-4">
+            <div
+              contentEditable={editable}
+              suppressContentEditableWarning
+              spellCheck={false}
+              onBlur={(e) => setEditTitle(e.target.textContent)}
+              className="text-xl font-semibold text-white outline-none border-b border-transparent"
+            >
+              {editTitle}
+            </div>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-4 space-y-3">
           <div
             contentEditable={editable}
             suppressContentEditableWarning
             spellCheck={false}
-            onBlur={(e) => setEditTitle(e.target.textContent)}
-            className="text-xl font-semibold text-white outline-none border-b border-transparent"
+            onBlur={(e) => setEditDescription(e.target.textContent)}
+            className="text-sm text-gray-600 outline-none border-b border-transparent"
           >
-            {editTitle}
+            {editDescription}
           </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="p-4 space-y-3">
-        <div
-          contentEditable={editable}
-          suppressContentEditableWarning
-          spellCheck={false}
-          onBlur={(e) => setEditDescription(e.target.textContent)}
-          className="text-sm text-gray-600 outline-none border-b border-transparent"
-        >
-          {editDescription}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="secondary" className="bg-primary text-white">
-            {formatCurrency(cost)}
-          </Badge>
-          <Badge variant="secondary" className="bg-primary text-white">
-            <Calendar className="h-3 w-3 mr-1" />
-            {days} days
-          </Badge>
-          <Badge
-            variant="secondary"
-            className="bg-primary text-white hover:bg-primary/90 cursor-pointer"
-            onClick={handleBadgeClick}
-          >
-            <Users className="h-3 w-3 mr-1" />
-            <span
-              ref={spanRef}
-              contentEditable={editable}
-              suppressContentEditableWarning
-              onInput={handleInput}
-              onBlur={handleBlur}
-              className="outline-none cursor-pointer"
-              tabIndex={0}
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="secondary" className="bg-primary text-white">
+              {formatCurrency(cost)}
+            </Badge>
+            <Badge variant="secondary" className="bg-primary text-white">
+              <Calendar className="h-3 w-3 mr-1" />
+              {days} days
+            </Badge>
+            <Badge
+              variant="secondary"
+              className="bg-primary text-white hover:bg-primary/90 cursor-pointer"
+              onClick={handleBadgeClick}
             >
-              {editPeople}
-            </span>{" "}
-            people
-          </Badge>
-        </div>
+              <Users className="h-3 w-3 mr-1" />
+              <span
+                ref={spanRef}
+                contentEditable={editable}
+                suppressContentEditableWarning
+                onInput={handleInput}
+                onBlur={handleBlur}
+                className="outline-none cursor-pointer"
+                tabIndex={0}
+              >
+                {editPeople}
+              </span>{" "}
+              people
+            </Badge>
+          </div>
 
-        {/* Rating */}
-        <div className="space-y-1 border-t pt-2">
-          {!showRatingInput && (
-            <div className="flex items-center justify-between">
+          {/* Rating */}
+          <div className="space-y-1 border-t pt-2">
+            {!showRatingInput && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {renderStars(rating)}
+                  <span className="text-sm text-gray-600">
+                    {rating.toFixed(1)} ({votes} votes)
+                  </span>
+                  <button
+                    className="text-xs text-blue-500 hover:underline cursor-pointer"
+                    onClick={() => setShowRatingInput(true)}
+                  >
+                    {isVoated ? "My rating" : "Vote now"}
+                  </button>
+                </div>
+              </div>
+            )}
+            {showRatingInput && (
               <div className="flex items-center gap-2">
-                {renderStars(rating)}
+                {renderStars(userRating, true)}
                 <span className="text-sm text-gray-600">
                   {rating.toFixed(1)} ({votes} votes)
                 </span>
                 <button
                   className="text-xs text-blue-500 hover:underline cursor-pointer"
-                  onClick={() => setShowRatingInput(true)}
+                  onClick={() => handleRating(userRating)}
                 >
-                  {isVoated ? "My rating" : "Vote now"}
+                  Submit
+                </button>
+                {isVoated && (
+                  <button
+                    className="text-xs text-red-500 hover:underline cursor-pointer"
+                    onClick={() => handleRating(userRating, true)}
+                  >
+                    Remove
+                  </button>
+                )}
+                <button
+                  className="text-xs text-gray-500 hover:underline cursor-pointer"
+                  onClick={() => setShowRatingInput(false)}
+                >
+                  Cancel
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {showRatingInput && (
-            <div className="flex items-center gap-2">
-              {renderStars(userRating, true)}
-              <span className="text-sm text-gray-600">
-                {rating.toFixed(1)} ({votes} votes)
-              </span>
-              <button
-                className="text-xs text-blue-500 hover:underline cursor-pointer"
-                onClick={() => handleRating(userRating)}
-              >
-                Submit
-              </button>
-              {isVoated && (
-                <button
-                  className="text-xs text-red-500 hover:underline cursor-pointer"
-                  onClick={() => handleRating(userRating, true)}
-                >
-                  Remove
-                </button>
-              )}
-              <button
-                className="text-xs text-gray-500 hover:underline cursor-pointer"
-                onClick={() => setShowRatingInput(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* User Info */}
-        <div className="flex items-center gap-2 pt-2 border-t">
-          <Avatar className="h-6 w-6">
-            <AvatarImage src="/placeholder.svg" />
-            <AvatarFallback>
-              <User className="h-3 w-3" />
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-sm text-gray-600">{username}</span>
+          {/* User Info */}
+          <div className="flex items-center gap-2 pt-2 border-t">
+            <Avatar className="h-6 w-6">
+              <AvatarImage src="/placeholder.svg" />
+              <AvatarFallback>
+                <User className="h-3 w-3" />
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm text-gray-600">{username}</span>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmDelete}
+        title="Delete Plan"
+        message="Are you sure you want to delete this plan? This action cannot be undone."
+        confirmText="Delete"
+        confirmButtonClass="bg-red-600 hover:bg-red-700 text-white"
+      />
+
+      {/* Duplicate Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDuplicateModal}
+        onClose={() => setShowDuplicateModal(false)}
+        onConfirm={confirmDuplicate}
+        title="Duplicate Plan"
+        message="This will create a copy of this plan."
+        confirmText="Duplicate"
+        confirmButtonClass="bg-black hover:bg-gray-800 text-white"
+      />
+    </>
   );
 };
 

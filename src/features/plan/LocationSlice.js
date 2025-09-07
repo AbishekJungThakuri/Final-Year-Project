@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import axios from '../../services/axiosInstances';
 
 // ✅ NEW: Fetch single place by ID
 export const fetchPlaceByIdThunk = createAsyncThunk(
@@ -9,7 +9,7 @@ export const fetchPlaceByIdThunk = createAsyncThunk(
       const res = await axios.get(`/places/${placeId}`);
       return res.data.data; // Assuming response: { data: { ...place } }
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -31,7 +31,7 @@ export const fetchPlacesThunk = createAsyncThunk(
       });
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -50,7 +50,7 @@ export const fetchCitiesThunk = createAsyncThunk(
       });
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );
@@ -70,7 +70,7 @@ export const fetchNearestCitiesThunk = createAsyncThunk(
       });
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
+      return rejectWithValue(err.response?.data?.detail || err.message);
     }
   }
 );

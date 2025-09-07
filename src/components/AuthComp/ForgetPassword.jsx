@@ -6,7 +6,7 @@ import { forgetPassword } from "../../features/auth/loginAuth/authThunks";
 
 const ForgetPassword = () => {
   const [email, setEmail] = useState("");
-  const [localSuccess, setLocalSuccess] = useState(""); // ✅ local success message
+  const [localSuccess, setLocalSuccess] = useState("");
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -14,31 +14,28 @@ const ForgetPassword = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setLocalSuccess(""); // reset message
+    setLocalSuccess("");
     dispatch(forgetPassword(email))
       .unwrap()
-      .then((res) => {
-        // only when API really succeeds
+      .then(() => {
         setLocalSuccess("Check your email for password reset instructions");
         setEmail("");
       })
-      .catch(() => {
-        setLocalSuccess(""); // do nothing on error
-      });
+      .catch(() => setLocalSuccess(""));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Main Card */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
-          {/* Header with gradient background */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-center">
-            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-              <Lock className="w-8 h-8 text-white" />
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+          {/* Header */}
+          <div className="p-8 text-center border-b border-gray-200 bg-gray-100">
+            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-gray-700" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Forgot Password?</h2>
-            <p className="text-blue-100 text-sm">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Forgot Password?</h2>
+            <p className="text-gray-600 text-sm">
               No worries, we'll send you reset instructions
             </p>
           </div>
@@ -59,7 +56,7 @@ const ForgetPassword = () => {
                     placeholder="Enter your email address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50/50 hover:bg-white focus:bg-white"
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 bg-white text-gray-900 placeholder-gray-400"
                   />
                 </div>
               </div>
@@ -68,7 +65,7 @@ const ForgetPassword = () => {
               <button
                 onClick={handleSubmit}
                 disabled={loading || !email.trim()}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:from-blue-700 hover:to-purple-700 hover:shadow-lg hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center space-x-2 group"
+                className="w-full bg-primary text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 hover:opacity-90 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {loading ? (
                   <>
@@ -78,7 +75,7 @@ const ForgetPassword = () => {
                 ) : (
                   <>
                     <span>Send Reset Link</span>
-                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
@@ -86,9 +83,9 @@ const ForgetPassword = () => {
 
             {/* Success Message */}
             {localSuccess && (
-              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl animate-in slide-in-from-top-2 duration-300">
+              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl">
                 <div className="flex items-start space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-green-800 text-sm font-medium">Success!</p>
                     <p className="text-green-700 text-sm">{localSuccess}</p>
@@ -99,9 +96,9 @@ const ForgetPassword = () => {
 
             {/* Error Message */}
             {error && (
-              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl animate-in slide-in-from-top-2 duration-300">
+              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
                 <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
                   <div>
                     <p className="text-red-800 text-sm font-medium">Error</p>
                     <p className="text-red-700 text-sm">{error}</p>
@@ -112,7 +109,10 @@ const ForgetPassword = () => {
 
             {/* Back to Login Link */}
             <div className="mt-8 text-center">
-              <button onClick={()=>navigate('/login')} className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors duration-200 hover:underline cursor-pointer">
+              <button
+                onClick={() => navigate("/login")}
+                className="text-primary hover:underline text-sm font-medium transition-colors duration-200"
+              >
                 ← Back to Login
               </button>
             </div>
@@ -121,9 +121,12 @@ const ForgetPassword = () => {
 
         {/* Bottom Help Text */}
         <div className="text-center mt-6">
-          <p className="text-gray-500 text-sm">
+          <p className="text-gray-600 text-sm">
             Remember your password?{" "}
-            <button className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200">
+            <button
+              onClick={() => navigate("/login")}
+              className="text-primary font-medium transition-colors duration-200 hover:underline"
+            >
               Sign in instead
             </button>
           </p>

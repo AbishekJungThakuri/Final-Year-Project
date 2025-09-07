@@ -79,12 +79,16 @@ const Plan = () => {
 
   useEffect(() => {
     if (plan?.user?.id) {
-      const localUserId = localStorage.getItem("user_id");
+      const localUserId = localStorage.getItem("userId");      
       if(plan.user.id.toString() === localUserId){
         setIsMyPlan(true);
         if(isEditable === undefined){
           setIsEditable(true);
         }
+      }
+      else{
+        setIsMyPlan(false);
+        setIsEditable(false);
       }
     }
   }, [plan]);
@@ -191,6 +195,7 @@ const Plan = () => {
   }
 
   const itineraryData = {
+    id: plan.id,
     title: plan.title || "Trip Plan",
     description: plan.description || "Your amazing travel itinerary",
     cost: plan.estimated_cost || 0,

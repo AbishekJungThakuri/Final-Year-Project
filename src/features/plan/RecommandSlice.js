@@ -1,6 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
-
+import axios from '../../services/axiosInstances';
 
 export const fetchRecommandedTransport = createAsyncThunk(
     'recommand/fetchTransportRecommand',

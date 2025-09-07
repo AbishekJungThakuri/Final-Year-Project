@@ -27,7 +27,20 @@ export const Login = () => {
   useEffect(() => {
       dispatch(getGoogleUrl());
     }, [dispatch]);
- 
+  
+    useEffect(() => {
+      const handleMessage = (event) => {
+        if (event.data?.type === "OAUTH_SUCCESS") {
+          navigate("/"); // ✅ redirect to home
+        } else if (event.data?.type === "OAUTH_ERROR") {
+          navigate("/login?error=oauth_failed"); // ❌ redirect to login
+        }
+      };
+    
+      window.addEventListener("message", handleMessage);
+      return () => window.removeEventListener("message", handleMessage);
+    }, [navigate]);
+    
 
 const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -63,7 +76,7 @@ const handleChange = (e) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 relative px-4">
       {/* Logo */}
-      <h1 onClick={()=>navigate('/')} className="absolute top-4 left-4 sm:top-5 sm:left-8 text-xl sm:text-2xl font-semibold z-20 cursor-pointer">
+      <h1 className="absolute top-4 left-4 text-xl font-semibold cursor-pointer" onClick={()=>navigate('/')}>
         <span className="text-red-500">Holiday</span>
         <span className="text-gray-800">Nepal</span>
       </h1>
@@ -129,13 +142,26 @@ const handleChange = (e) => {
 
         {/* Google Sign-In */}
 
-         {googleUrl && (
-        <a href={googleUrl} target="_blank">
-           <button type="button" className="w-full mt-4 flex items-center justify-center border-2 py-2 border-gray-200 rounded-xl hover:bg-gray-100 transition duration-200 text-sm cursor-pointer ">
+        {googleUrl && (
+        <button
+          type="button"
+          onClick={() => {
+            const width = 400;
+            const height = 500;
+            const left = window.screenX + (window.outerWidth - width) / 2;
+            const top = window.screenY + (window.outerHeight - height) / 2;
+
+            window.open(
+              googleUrl,
+              "GoogleSignIn",
+              `width=${width},height=${height},left=${left},top=${top},resizable,scrollbars`
+            );
+          }}
+          className="w-full mt-4 flex items-center justify-center border-2 py-2 border-gray-200 rounded-xl hover:bg-gray-100 transition duration-200 text-sm cursor-pointer "
+        >
           <img src={googlelogo} alt="Google logo" className="mr-2" />
-          Sign in with Google
+            Sign in with Google
         </button>
-        </a>
       )}
        
         {/* Sign Up */}

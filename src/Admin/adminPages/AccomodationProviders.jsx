@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import {
-  getAllAccommodationServices,
-  createAccommodationService,
-  updateAccommodationService,
-  deleteAccommodationService
-} from '../api/AccomodationProviders';
+import { getAllAccommodationServices, createAccommodationService, updateAccommodationService, deleteAccommodationService } from '../api/AccomodationProviders';
 import { uploadImage } from '../api/images';
 import { Plus, Trash2, Pencil, LayoutList, Grid3x3, Search, MapPin, DollarSign, X } from 'lucide-react';
+import Pagination from './Pagination'; // Assuming your Pagination component is at this path
 
 const AccommodationProvider = () => {
   const [services, setServices] = useState([]);
@@ -15,20 +11,23 @@ const AccommodationProvider = () => {
   const [viewMode, setViewMode] = useState('card');
   const [showForm, setShowForm] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '', description: '', city_id: '', full_address: '', accomodation_category: '',
-    longitude: '', latitude: '', cost_per_night: '', image_ids: []
-  });
+  const [formData, setFormData] = useState({ name: '', description: '', city_id: '', full_address: '', accommodation_category: '', longitude: '', latitude: '', cost_per_night: '', image_ids: [] });
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(12); // Changed default to 10
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
-  const fetchServices = async () => {
+  const fetchServices = async (page = currentPage) => {
     setLoading(true);
     try {
-      const data = await getAllAccommodationServices({ size: pageSize, search });
-      setServices(data);
+      const data = await getAllAccommodationServices({ size: pageSize, search, page });
+      setServices(data.data);
+      setCurrentPage(data.page);
+      setTotalPages(Math.ceil(data.total / data.size));
+      setTotalItems(data.total);
     } catch (err) {
       setError('Failed to load accommodation services');
     } finally {
@@ -37,12 +36,12 @@ const AccommodationProvider = () => {
   };
 
   useEffect(() => {
-    fetchServices();
-  }, [pageSize, search]);
+    // This effect now fetches data when page size, search, or current page changes
+    fetchServices(currentPage);
+  }, [pageSize, search, currentPage]);
 
   const resetForm = () => {
-    setFormData({ name: '', description: '', city_id: '', full_address: '', accomodation_category: '',
-      longitude: '', latitude: '', cost_per_night: '', image_ids: [] });
+    setFormData({ name: '', description: '', city_id: '', full_address: '', accommodation_category: '', longitude: '', latitude: '', cost_per_night: '', image_ids: [] });
     setSelectedFiles([]);
     setImagePreviews([]);
     setEditingService(null);
@@ -79,10 +78,15 @@ const AccommodationProvider = () => {
   const handleEdit = (service) => {
     setEditingService(service);
     setFormData({
-      name: service.name || '', description: service.description || '', city_id: service.city_id || '',
-      full_address: service.full_address || '', accomodation_category: service.accomodation_category || '',
-      longitude: service.longitude || '', latitude: service.latitude || '',
-      cost_per_night: service.cost_per_night || '', image_ids: service.images?.map(img => img.id) || []
+      name: service.name || '',
+      description: service.description || '',
+      city_id: service.city_id || '',
+      full_address: service.full_address || '',
+      accommodation_category: service.accommodation_category || '',
+      longitude: service.longitude || '',
+      latitude: service.latitude || '',
+      cost_per_night: service.cost_per_night || '',
+      image_ids: service.images?.map(img => img.id) || []
     });
     setImagePreviews(service.images?.map(img => img.url) || []);
     setShowForm(true);
@@ -99,6 +103,15 @@ const AccommodationProvider = () => {
     }
   };
 
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when page size changes
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
@@ -112,48 +125,28 @@ const AccommodationProvider = () => {
             <div className="flex items-center gap-3">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search..."
-                  className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 w-64"
-                />
+                <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search..." className="pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 w-64" />
               </div>
-              <select
-                value={pageSize}
-                onChange={(e) => setPageSize(Number(e.target.value))}
-                className="px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-              >
-                {[10, 20, 50, 100].map(size => (
+              <select value={pageSize} onChange={(e) => handlePageSizeChange(Number(e.target.value))} className="px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" >
+                {[12, 24, 60, 120].map(size => (
                   <option key={size} value={size}>{size} items</option>
                 ))}
               </select>
               <div className="flex bg-slate-100 rounded-xl p-1">
-                <button
-                  onClick={() => setViewMode('card')}
-                  className={`p-2 rounded-lg ${viewMode === 'card' ? 'bg-white text-blue-600 shadow' : 'text-slate-500'}`}
-                >
+                <button onClick={() => setViewMode('card')} className={`p-2 rounded-lg ${viewMode === 'card' ? 'bg-white text-blue-600 shadow' : 'text-slate-500'}`} >
                   <Grid3x3 size={18} />
                 </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`p-2 rounded-lg ${viewMode === 'table' ? 'bg-white text-blue-600 shadow' : 'text-slate-500'}`}
-                >
+                <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg ${viewMode === 'table' ? 'bg-white text-blue-600 shadow' : 'text-slate-500'}`} >
                   <LayoutList size={18} />
                 </button>
               </div>
-              <button
-                onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg"
-              >
+              <button onClick={() => setShowForm(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg" >
                 <Plus size={18} /> Add Service
               </button>
             </div>
           </div>
         </div>
       </div>
-
       {/* Error Alert */}
       {error && (
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -165,7 +158,6 @@ const AccommodationProvider = () => {
           </div>
         </div>
       )}
-
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -176,85 +168,30 @@ const AccommodationProvider = () => {
                 <X size={20} />
               </button>
             </div>
-            
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  placeholder="Name *"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="City ID"
-                  value={formData.city_id}
-                  onChange={(e) => setFormData({ ...formData, city_id: e.target.value })}
-                  className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-                />
+                <input type="text" placeholder="Name *" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" required />
+                <input type="text" placeholder="City ID" value={formData.city_id} onChange={(e) => setFormData({ ...formData, city_id: e.target.value })} className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" />
               </div>
-              <textarea
-                placeholder="Description *"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none"
-                rows="3"
-                required
-              />
-              <input
-                type="text"
-                placeholder="Full Address"
-                value={formData.full_address}
-                onChange={(e) => setFormData({ ...formData, full_address: e.target.value })}
-                className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-              />
+              <textarea placeholder="Description *" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 resize-none" rows="3" required />
+              <input type="text" placeholder="Full Address" value={formData.full_address} onChange={(e) => setFormData({ ...formData, full_address: e.target.value })} className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" />
               <div className="grid grid-cols-3 gap-4">
-                <select
-                  value={formData.accomodation_category}
-                  onChange={(e) => setFormData({ ...formData, accomodation_category: e.target.value })}
-                  className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-                >
+                <select value={formData.accommodation_category} onChange={(e) => setFormData({ ...formData, accommodation_category: e.target.value })} className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" >
                   <option value="">Category</option>
                   <option value="hotel">Hotel</option>
                   <option value="resort">Resort</option>
                   <option value="villa">Villa</option>
                   <option value="apartment">Apartment</option>
                 </select>
-                <input
-                  type="text"
-                  placeholder="Longitude"
-                  value={formData.longitude}
-                  onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                  className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Latitude"
-                  value={formData.latitude}
-                  onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                  className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-                />
+                <input type="text" placeholder="Longitude" value={formData.longitude} onChange={(e) => setFormData({ ...formData, longitude: e.target.value })} className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" />
+                <input type="text" placeholder="Latitude" value={formData.latitude} onChange={(e) => setFormData({ ...formData, latitude: e.target.value })} className="px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" />
               </div>
               <div className="relative">
                 <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input
-                  type="number"
-                  placeholder="Cost per night"
-                  value={formData.cost_per_night}
-                  onChange={(e) => setFormData({ ...formData, cost_per_night: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500"
-                />
+                <input type="number" placeholder="Cost per night" value={formData.cost_per_night} onChange={(e) => setFormData({ ...formData, cost_per_night: e.target.value })} className="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
-                <input
-                  type="file"
-                  multiple
-                  onChange={handleImageChange}
-                  className="w-full px-4 py-3 border-2 border-dashed border-slate-200 rounded-xl focus:border-blue-300"
-                  accept="image/*"
-                />
+                <input type="file" multiple onChange={handleImageChange} className="w-full px-4 py-3 border-2 border-dashed border-slate-200 rounded-xl focus:border-blue-300" accept="image/*" />
                 {imagePreviews.length > 0 && (
                   <div className="flex gap-2 mt-3">
                     {imagePreviews.map((url, index) => (
@@ -264,17 +201,8 @@ const AccommodationProvider = () => {
                 )}
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="px-6 py-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSubmit}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium"
-                >
+                <button type="button" onClick={resetForm} className="px-6 py-2.5 border border-slate-200 rounded-xl hover:bg-slate-50 font-medium" > Cancel </button>
+                <button onClick={handleSubmit} className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium" >
                   {editingService ? 'Update' : 'Create'}
                 </button>
               </div>
@@ -282,7 +210,6 @@ const AccommodationProvider = () => {
           </div>
         </div>
       )}
-
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
@@ -295,40 +222,28 @@ const AccommodationProvider = () => {
             {services.map(service => (
               <div key={service.id} className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
                 <div className="relative">
-                  <img
-                    src={service.images?.[0]?.url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400'}
-                    alt={service.name}
-                    className="w-full h-48 object-cover"
-                  />
+                  <img src={service.images?.[0]?.url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400'} alt={service.name} className="w-full h-48 object-cover" />
                   <div className="absolute top-4 right-4 flex gap-2">
-                    <button
-                      onClick={() => handleEdit(service)}
-                      className="p-2 bg-white bg-opacity-90 rounded-full shadow-sm text-blue-600 hover:bg-opacity-100"
-                    >
+                    <button onClick={() => handleEdit(service)} className="p-2 bg-white bg-opacity-90 rounded-full shadow-sm text-blue-600 hover:bg-opacity-100" >
                       <Pencil size={16} />
                     </button>
-                    <button
-                      onClick={() => handleDelete(service.id)}
-                      className="p-2 bg-white bg-opacity-90 rounded-full shadow-sm text-red-600 hover:bg-opacity-100"
-                    >
+                    <button onClick={() => handleDelete(service.id)} className="p-2 bg-white bg-opacity-90 rounded-full shadow-sm text-red-600 hover:bg-opacity-100" >
                       <Trash2 size={16} />
                     </button>
                   </div>
                   <div className="absolute bottom-4 right-4 bg-white bg-opacity-90 px-3 py-1 rounded-full text-sm font-medium capitalize">
-                    {service.accomodation_category}
+                    {service.accommodation_category}
                   </div>
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-bold text-slate-800 mb-2">{service.name}</h3>
                   <div className="flex items-center text-sm text-slate-500 mb-2">
-                    <MapPin size={14} className="mr-2" />
-                    {service.full_address || 'Address not specified'}
+                    <MapPin size={14} className="mr-2" /> {service.full_address || 'Address not specified'}
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-slate-500">ID: {service.city_id}</span>
                     <div className="flex items-center text-green-600 font-semibold">
-                      <DollarSign size={16} />
-                      {service.cost_per_night}/night
+                      <DollarSign size={16} /> {service.cost_per_night}/night
                     </div>
                   </div>
                 </div>
@@ -352,18 +267,14 @@ const AccommodationProvider = () => {
                 {services.map(service => (
                   <tr key={service.id} className="hover:bg-slate-50">
                     <td className="px-6 py-4">
-                      <img 
-                        src={service.images?.[0]?.url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=100'} 
-                        alt="Service" 
-                        className="h-12 w-12 object-cover rounded-lg" 
-                      />
+                      <img src={service.images?.[0]?.url || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=100'} alt="Service" className="h-12 w-12 object-cover rounded-lg" />
                     </td>
                     <td className="px-6 py-4 font-medium text-slate-900">{service.name}</td>
                     <td className="px-6 py-4 text-slate-600">{service.city_id}</td>
                     <td className="px-6 py-4 font-semibold text-green-600">${service.cost_per_night}</td>
                     <td className="px-6 py-4">
                       <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm capitalize">
-                        {service.accomodation_category}
+                        {service.accommodation_category}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -382,6 +293,18 @@ const AccommodationProvider = () => {
             </table>
           </div>
         )}
+      </div>
+
+      {/* Pagination at the bottom */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={pageSize}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+        />
       </div>
     </div>
   );

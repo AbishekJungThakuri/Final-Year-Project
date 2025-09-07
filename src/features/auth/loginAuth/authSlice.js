@@ -1,14 +1,12 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { loginUser, logoutUser,fetchUserProfile, forgetPassword, resetPassword, getGoogleUrl,googleCallback } from './authThunks';
-
-import { jwtDecode } from "jwt-decode";
+import { loginUser, logoutUser, fetchUserProfile, forgetPassword, resetPassword, getGoogleUrl, googleCallback } from './authThunks';
 import axiosInstance from '../../../services/axiosInstances';
 
 const initialState = {
   token: localStorage.getItem('accessToken') || null,
-  role: null,          
+  role: localStorage.getItem('role') || null,
   isAuthenticated: !!localStorage.getItem('accessToken'),
-  user: "",
+  user: null,
   googleUrl: "",
   loading: false,
   error: null,
@@ -22,15 +20,19 @@ const authSlice = createSlice({
     clearAuth(state) {
       state.token = null;
       state.role = null;
-      state.user = null,
+      state.user = null;
       state.isAuthenticated = false;
       state.error = null;
-      localStorage.removeItem('token');
+      state.googleUrl = "";
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('role');
+      localStorage.removeItem('userId');
       delete axiosInstance.defaults.headers.common['Authorization'];
     },
   },
   extraReducers: (builder) => {
     builder
+      // --- Normal Login ---
       .addCase(loginUser.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -40,21 +42,33 @@ const authSlice = createSlice({
         state.token = action.payload.access_token;
         state.role = action.payload.role;
         state.isAuthenticated = true;
+        state.user = action.payload.user || null;
+
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${action.payload.access_token}`;
+        localStorage.setItem('accessToken', action.payload.access_token);
+        localStorage.setItem('role', action.payload.role);
+        if (action.payload.user_id) localStorage.setItem('userId', action.payload.user_id);
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || 'Login failed';
       })
+
+      // --- Logout ---
       .addCase(logoutUser.fulfilled, (state) => {
         state.token = null;
         state.role = null;
+        state.user = null;
         state.isAuthenticated = false;
         state.loading = false;
         state.error = null;
-        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
         localStorage.removeItem('role');
+        localStorage.removeItem('userId');
         delete axiosInstance.defaults.headers.common['Authorization'];
       })
+
+      // --- Fetch User Profile ---
       .addCase(fetchUserProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -62,19 +76,13 @@ const authSlice = createSlice({
       .addCase(fetchUserProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.user = action.payload;
-
-         // decode role from token if backend doesn't return it
-  const token = state.token || localStorage.getItem("accessToken");
-  if (token) {
-    const decoded = jwtDecode(token);
-    state.role = decoded.role;
-  }
       })
       .addCase(fetchUserProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || 'Failed to fetch user';
       })
-      // Forget password
+
+      // --- Forget Password ---
       .addCase(forgetPassword.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -88,7 +96,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-       // Reset password
+
+      // --- Reset Password ---
       .addCase(resetPassword.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -102,7 +111,8 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-       // Get Google URL
+
+      // --- Google URL ---
       .addCase(getGoogleUrl.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -115,23 +125,30 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
-      // Google Callback
+
+      // --- Google Callback / Verify Email Redirect ---
       .addCase(googleCallback.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(googleCallback.fulfilled, (state, action) => {
         state.loading = false;
-        state.user = action.payload.user || action.payload;
-        state.token = action.payload.token;
-        state.role = action.payload.role || action.payload.user?.role;
+        const payload = action.payload;
+
+        state.token = payload.access_token;
+        state.role = payload.role;
+        state.user = payload.user || null;
         state.isAuthenticated = true;
+
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${payload.access_token}`;
+        localStorage.setItem('accessToken', payload.access_token);
+        localStorage.setItem('role', payload.role);
+        if (payload.user_id) localStorage.setItem('userId', payload.user_id);
       })
       .addCase(googleCallback.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      })
+      });
   },
 });
 

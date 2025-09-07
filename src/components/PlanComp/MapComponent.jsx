@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet"
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-const SingleRouteMap = ({ mapData }) => {
+const MapComponent = ({ mapData }) => {
   if (!mapData || !mapData.steps || mapData.steps.length < 2)
     return <p>Not enough data to show a route</p>;
 
@@ -41,7 +41,7 @@ const SingleRouteMap = ({ mapData }) => {
   }, [places]);
 
   return (
-    <div className="h-screen w-full">
+    <div className="h-screen w-full relative">
       <MapContainer center={center} zoom={8} style={{ height: "100%", width: "100%" }}>
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -87,4 +87,4 @@ const SingleRouteMap = ({ mapData }) => {
   );
 };
 
-export default SingleRouteMap;
+export default MapComponent;

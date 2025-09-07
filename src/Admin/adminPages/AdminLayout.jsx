@@ -5,7 +5,6 @@ import { Menu } from 'lucide-react';
 
 const pageTitles = {
   '/': 'Dashboard',
-  '/allUsers': 'All Users',
   '/allPlaces': 'All Places',
   '/allActivities': 'All Activities',
   '/serviceProviders': 'Service Providers',

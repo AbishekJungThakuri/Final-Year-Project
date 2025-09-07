@@ -1,5 +1,4 @@
-import axios from 'axios';
-
+import axios from '../../services/axiosInstances';
 const BASE_URL = 'http://localhost:8000'; 
 
 export const getAllTransportServices = async ({
@@ -28,7 +27,7 @@ export const getAllTransportServices = async ({
   }
 
   const response = await axios.get(`${BASE_URL}/transport-services/`, { params });
-  return response.data.data;
+  return response.data;
 };
 
 export const getTransportServiceById = async (transportServiceId) => {
