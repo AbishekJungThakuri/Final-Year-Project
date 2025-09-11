@@ -1,13 +1,11 @@
 import axios from '../../../services/axiosInstances';
 
-export const registerUser = async ({ username, email, password, city_id }) => {
-  if (!city_id) throw new Error("City is required");
+export const registerUser = async ({ username, email, password }) => {
 
   const res = await axios.post("/auth/register", {
     username,
     email,
     password,
-    city_id, 
   });
   return res.data;
 };
@@ -20,5 +18,13 @@ export const verifyEmail = async ({ email, otp }) => {
       otp.trim()
     )}`
   );
+  return res.data;
+};
+
+
+export const resendEmailOtp = async (email) => {
+  if(!email) throw new Error("Missing email");
+  
+  const res = await axios.post(`/auth/resend_otp?email=${encodeURIComponent(email)}`);
   return res.data;
 };

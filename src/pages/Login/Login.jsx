@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
-import googlelogo from '../../assets/images/googlelogo.png';
-import bg_image from '../../assets/images/homepagebg.png';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { loginUser } from '../../features/auth/loginAuth/authThunks';
-import {getGoogleUrl} from '../../features/auth/loginAuth/authThunks'
-
+import React, { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import googlelogo from "../../assets/images/googlelogo.png";
+import bg_image from "../../assets/images/homepagebg.png";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser } from "../../features/auth/loginAuth/authThunks";
+import { getGoogleUrl } from "../../features/auth/loginAuth/authThunks";
 
 export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -14,35 +13,34 @@ export const Login = () => {
     email_or_username: "",
     password: "",
   });
-  
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const { loading, isAuthenticated, user, role, error } = useSelector(
     (state) => state.auth
   );
-  
+
   const { googleUrl } = useSelector((state) => state.auth);
 
   useEffect(() => {
-      dispatch(getGoogleUrl());
-    }, [dispatch]);
-  
-    useEffect(() => {
-      const handleMessage = (event) => {
-        if (event.data?.type === "OAUTH_SUCCESS") {
-          navigate("/"); // ✅ redirect to home
-        } else if (event.data?.type === "OAUTH_ERROR") {
-          navigate("/login?error=oauth_failed"); // ❌ redirect to login
-        }
-      };
-    
-      window.addEventListener("message", handleMessage);
-      return () => window.removeEventListener("message", handleMessage);
-    }, [navigate]);
-    
+    dispatch(getGoogleUrl());
+  }, [dispatch]);
 
-const handleChange = (e) => {
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.data?.type === "OAUTH_SUCCESS") {
+        window.location.href = "/";
+      } else if (event.data?.type === "OAUTH_ERROR") {
+        navigate("/login?error=oauth_failed");
+      }
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [navigate]);
+
+  const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
@@ -55,13 +53,12 @@ const handleChange = (e) => {
   useEffect(() => {
     if (isAuthenticated && role) {
       if (role === "admin") {
-        navigate("/dashboard");
+        navigate("/allPlaces");
       } else if (role === "user") {
         navigate("/");
       }
     }
   }, [isAuthenticated, role, navigate]);
-
 
   useEffect(() => {
     let timer;
@@ -76,7 +73,10 @@ const handleChange = (e) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 relative px-4">
       {/* Logo */}
-      <h1 className="absolute top-4 left-4 text-xl font-semibold cursor-pointer" onClick={()=>navigate('/')}>
+      <h1
+        className="absolute top-4 left-4 text-xl font-semibold cursor-pointer"
+        onClick={() => navigate("/")}
+      >
         <span className="text-red-500">Holiday</span>
         <span className="text-gray-800">Nepal</span>
       </h1>
@@ -88,7 +88,10 @@ const handleChange = (e) => {
       ></div>
 
       {/* Main Container */}
-      <form onSubmit={handleSubmit} className="bg-white border-2 border-gray-200 p-6 sm:p-8 rounded-2xl shadow-md w-full max-w-md z-10">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white border-2 border-gray-200 p-6 sm:p-8 rounded-2xl shadow-md w-full max-w-md z-10"
+      >
         <h2 className="text-xl sm:text-xl font-medium text-center mb-6 sm:mb-8">
           Welcome back !
         </h2>
@@ -110,7 +113,7 @@ const handleChange = (e) => {
         <div className="mb-4 relative">
           <label className="text-sm text-gray-700">Password</label>
           <input
-            type={showPassword ? 'text' : 'password'}
+            type={showPassword ? "text" : "password"}
             name="password"
             onChange={handleChange}
             value={formData.password}
@@ -126,48 +129,57 @@ const handleChange = (e) => {
               {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
             </div>
           )}
-          <Link to={'/forget_password'} className="text-right text-xs mt-1 text-gray-500 hover:underline cursor-pointer">
+          <Link
+            to={"/forget_password"}
+            className="text-right text-xs mt-1 text-gray-500 hover:underline cursor-pointer"
+          >
             forgot password ?
           </Link>
         </div>
-        
 
         {/* Error */}
         {error && <p className="text-red-600 mt-2">{error}</p>}
 
         {/* Login Button */}
-        <button type='submit' disabled={loading} className="w-full bg-black text-white py-2 rounded-xl hover:bg-red-600 transition duration-200 mt-2 cursor-pointer">
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-black text-white py-2 rounded-xl hover:bg-red-600 transition duration-200 mt-2 cursor-pointer"
+        >
           {loading ? "Logging in..." : "Login"}
         </button>
 
         {/* Google Sign-In */}
 
         {googleUrl && (
-        <button
-          type="button"
-          onClick={() => {
-            const width = 400;
-            const height = 500;
-            const left = window.screenX + (window.outerWidth - width) / 2;
-            const top = window.screenY + (window.outerHeight - height) / 2;
+          <button
+            type="button"
+            onClick={() => {
+              const width = 400;
+              const height = 500;
+              const left = window.screenX + (window.outerWidth - width) / 2;
+              const top = window.screenY + (window.outerHeight - height) / 2;
 
-            window.open(
-              googleUrl,
-              "GoogleSignIn",
-              `width=${width},height=${height},left=${left},top=${top},resizable,scrollbars`
-            );
-          }}
-          className="w-full mt-4 flex items-center justify-center border-2 py-2 border-gray-200 rounded-xl hover:bg-gray-100 transition duration-200 text-sm cursor-pointer "
-        >
-          <img src={googlelogo} alt="Google logo" className="mr-2" />
+              window.open(
+                googleUrl,
+                "GoogleSignIn",
+                `width=${width},height=${height},left=${left},top=${top},resizable,scrollbars`
+              );
+            }}
+            className="w-full mt-4 flex items-center justify-center border-2 py-2 border-gray-200 rounded-xl hover:bg-gray-100 transition duration-200 text-sm cursor-pointer "
+          >
+            <img src={googlelogo} alt="Google logo" className="mr-2" />
             Sign in with Google
-        </button>
-      )}
-       
+          </button>
+        )}
+
         {/* Sign Up */}
         <div className="text-center mt-6 text-sm text-gray-600">
           Don’t have an account ?
-          <span onClick={()=>navigate('/signup')} className="text-red-500 ml-1 hover:underline cursor-pointer">
+          <span
+            onClick={() => navigate("/signup")}
+            className="text-red-500 ml-1 hover:underline cursor-pointer"
+          >
             Sign up
           </span>
         </div>

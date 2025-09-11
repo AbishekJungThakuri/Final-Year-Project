@@ -11,10 +11,6 @@ export function transformMapData(mapData) {
           id: step.id,
           start_city: step.route.start_city,
           end_city: step.route.end_city,
-          path: step.route.path.map((p) => ({
-            latitude: p.latitude,
-            longitude: p.longitude,
-          })),
           distance: step.route.distance,
           duration: step.route.duration,
         });

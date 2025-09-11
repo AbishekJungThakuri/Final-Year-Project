@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { registerUser, verifyEmail } from './registerApi';
+import { registerUser, verifyEmail, resendEmailOtp } from './registerApi';
 
 export const register = createAsyncThunk('auth/register', async (formData, thunkAPI) => {
   try {
@@ -13,7 +13,16 @@ export const verify = createAsyncThunk('auth/verify', async ({ email, otp }, thu
   try {
     return await verifyEmail({ email, otp });
   } catch (error) {
-    return thunkAPI.rejectWithValue(error.response?.data?.detail || 'Verification failed');
+    return thunkAPI.rejectWithValue(error.response?.data?.detail || 'Verification failed 2');
+  }
+});
+
+
+export const resendOTP = createAsyncThunk('auth/resendOTP', async (email, thunkAPI) => {
+  try {
+    return await resendEmailOtp({ email });
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.detail || 'Resending OTP failed');
   }
 });
 

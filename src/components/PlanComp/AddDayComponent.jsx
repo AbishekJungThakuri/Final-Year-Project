@@ -181,6 +181,11 @@ const AddDayComponent = ({
                   type="text"
                   value={newDayTitle}
                   onChange={(e) => setNewDayTitle(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newDayTitle.trim()) {
+                      handleAddDay(-1);
+                    }
+                  }}
                   placeholder={`Enter title for Day ${1}`}
                   className="w-full p-2 border rounded-md mb-3 focus:outline-none focus:ring-2 focus:ring-primary"
                   autoFocus

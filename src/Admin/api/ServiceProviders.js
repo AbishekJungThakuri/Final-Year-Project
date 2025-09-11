@@ -26,22 +26,23 @@ export const getAllTransportServices = async ({
     params.transport_category = transport_category;
   }
 
-  const response = await axios.get(`${BASE_URL}/transport-services/`, { params });
+  const response = await axios.get(`/transport-services/`, { params });
   return response.data;
 };
 
 export const getTransportServiceById = async (transportServiceId) => {
-  const response = await axios.get(`${BASE_URL}/transport-services/${transportServiceId}`);
+  const response = await axios.get(`/transport-services/${transportServiceId}`);
   return response.data;
 };
 
 // Create a transport service
 export const createTransportService = async (transportServiceData) => {
-  const response = await axios.post(`${BASE_URL}/transport-services/`, {
+  const response = await axios.post(`/transport-services/`, {
     route_ids: transportServiceData.route_ids || [],
     description: transportServiceData.description,
     image_ids: transportServiceData.image_ids || [],
-    route_category: transportServiceData.route_category,
+    contact: transportServiceData.contact,
+    route_category: transportServiceData.route_category || 'road',
     transport_category: transportServiceData.transport_category,
     average_duration: transportServiceData.average_duration,
     cost: transportServiceData.cost
@@ -50,11 +51,20 @@ export const createTransportService = async (transportServiceData) => {
 };
 
 export const updateTransportService = async (transportServiceId, transportServiceData) => {
-  const response = await axios.put(`${BASE_URL}/transport-services/${transportServiceId}`, transportServiceData);
+  const response = await axios.put(`/transport-services/${transportServiceId}`, {
+    route_ids: transportServiceData.route_ids || [],
+    description: transportServiceData.description,
+    image_ids: transportServiceData.image_ids || [],
+    contact: transportServiceData.contact,
+    route_category: transportServiceData.route_category || 'road',
+    transport_category: transportServiceData.transport_category,
+    average_duration: transportServiceData.average_duration,
+    cost: transportServiceData.cost
+  });
   return response.data;
 };
 
 export const deleteTransportService = async (transportServiceId) => {
-  const response = await axios.delete(`${BASE_URL}/transport-services/${transportServiceId}`);
+  const response = await axios.delete(`/transport-services/${transportServiceId}`);
   return response.data;
 };

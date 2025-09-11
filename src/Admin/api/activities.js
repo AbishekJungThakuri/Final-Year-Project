@@ -1,5 +1,4 @@
 import axios from '../../services/axiosInstances';
-const BASE_URL = 'http://localhost:8000'; 
 
 export const getAllActivities = async ({
   search = '',
@@ -16,18 +15,18 @@ export const getAllActivities = async ({
     size,
   };
 
-  const response = await axios.get(`${BASE_URL}/activities/`, { params });
+  const response = await axios.get(`/activities/`, { params });
   return response.data;
 };
 
 export const getActivityById = async (activityId) => {
-  const response = await axios.get(`${BASE_URL}/activities/${activityId}`);
+  const response = await axios.get(`/activities/${activityId}`);
   return response.data;
 };
 
 // Create an activity
 export const createActivity = async (activityData) => {
-  const response = await axios.post(`${BASE_URL}/activities/`, {
+  const response = await axios.post(`/activities/`, {
     name: activityData.name,
     description: activityData.description,
     image_id: activityData.image_id
@@ -36,11 +35,11 @@ export const createActivity = async (activityData) => {
 };
 
 export const updateActivity = async (activityId, activityData) => {
-  const response = await axios.put(`${BASE_URL}/activities/${activityId}`, activityData);
+  const response = await axios.put(`/activities/${activityId}`, activityData);
   return response.data;
 };
 
 export const deleteActivity = async (activityId) => {
-  const response = await axios.delete(`${BASE_URL}/activities/${activityId}`);
+  const response = await axios.delete(`/activities/${activityId}`);
   return response.data;
 };

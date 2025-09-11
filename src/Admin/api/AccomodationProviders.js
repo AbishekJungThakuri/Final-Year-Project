@@ -1,5 +1,4 @@
 import axios from '../../services/axiosInstances';
-const BASE_URL = 'http://localhost:8000'; 
 
 export const getAllAccommodationServices = async ({
   search = '',
@@ -26,23 +25,23 @@ export const getAllAccommodationServices = async ({
     params.accommodation_category = accommodation_category;
   }
 
-  const response = await axios.get(`${BASE_URL}/accommodation-services/`, { params });
+  const response = await axios.get(`/accommodation-services/`, { params });
   return response.data;
 };
 
 export const getAccommodationServiceById = async (accommodationServiceId) => {
-  const response = await axios.get(`${BASE_URL}/accommodation-services/${accommodationServiceId}`);
+  const response = await axios.get(`/accommodation-services/${accommodationServiceId}`);
   return response.data;
 };
 
 // Create an accommodation service
 export const createAccommodationService = async (accommodationServiceData) => {
-  const response = await axios.post(`${BASE_URL}/accommodation-services/`, {
+  const response = await axios.post(`/accommodation-services/`, {
     name: accommodationServiceData.name,
     description: accommodationServiceData.description,
     city_id: accommodationServiceData.city_id,
     full_address: accommodationServiceData.full_address,
-    accomodation_category: accommodationServiceData.accomodation_category,
+    accommodation_category: accommodationServiceData.accommodation_category,
     longitude: accommodationServiceData.longitude,
     latitude: accommodationServiceData.latitude,
     cost_per_night: accommodationServiceData.cost_per_night,
@@ -52,11 +51,11 @@ export const createAccommodationService = async (accommodationServiceData) => {
 };
 
 export const updateAccommodationService = async (accommodationServiceId, accommodationServiceData) => {
-  const response = await axios.put(`${BASE_URL}/accommodation-services/${accommodationServiceId}`, accommodationServiceData);
+  const response = await axios.put(`/accommodation-services/${accommodationServiceId}`, accommodationServiceData);
   return response.data;
 };
 
 export const deleteAccommodationService = async (accommodationServiceId) => {
-  const response = await axios.delete(`${BASE_URL}/accommodation-services/${accommodationServiceId}`);
+  const response = await axios.delete(`/accommodation-services/${accommodationServiceId}`);
   return response.data;
 };

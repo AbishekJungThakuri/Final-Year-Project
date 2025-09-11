@@ -21,20 +21,20 @@ export const getAllPlaces = async ({
     params.city_id = city_id;
   }
 
-  const response = await axios.get(`${BASE_URL}/places/`, { params });
+  const response = await axios.get(`/places/`, { params });
   return response.data;
 };
 
 export const getPlaceById = async (placeId) => {
-  const response = await axios.get(`${BASE_URL}/places/${placeId}`);
+  const response = await axios.get(`/places/${placeId}`);
   return response.data;
 };
 
 // Create a place
 export const createPlace = async (placeData) => {
-  const response = await axios.post(`${BASE_URL}/places/`, {
+  const response = await axios.post(`/places/`, {
     name: placeData.name,
-    category: placeData.category,
+    categories: placeData.categories,
     longitude: placeData.longitude,
     latitude: placeData.latitude,
     description: placeData.description,
@@ -48,11 +48,11 @@ export const createPlace = async (placeData) => {
 };
 
 export const updatePlace = async (placeId, placeData) => {
-  const response = await axios.put(`${BASE_URL}/places/${placeId}`, placeData);
+  const response = await axios.put(`/places/${placeId}`, placeData);
   return response.data;
 };
 
 export const deletePlace = async (placeId) => {
-  const response = await axios.delete(`${BASE_URL}/places/${placeId}`);
+  const response = await axios.delete(`/places/${placeId}`);
   return response.data;
 };

@@ -19,7 +19,7 @@ export const loginUser = createAsyncThunk(
       console.log("Login",res.data.data)
       return res.data.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data || { message: 'Login failed' });
+      return rejectWithValue(err.response.data.detail || 'Login failed');
     }
   }
 );
@@ -42,6 +42,26 @@ export const logoutUser = createAsyncThunk(
     }
   }
 );
+
+export const deleteUser = createAsyncThunk(
+  'auth/deleteUser',
+  async (password, { rejectWithValue }) => {
+    try {
+      await axiosInstance.delete(`/auth/delete_account?password=${encodeURIComponent(password)}`);
+
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('role');
+      localStorage.removeItem('userId');
+      delete axiosInstance.defaults.headers.common['Authorization'];
+
+      return true;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || { message: 'Logout failed' });
+    }
+  }
+);
+
+
 
 // ✅ Fetch user profile
 export const fetchUserProfile = createAsyncThunk(

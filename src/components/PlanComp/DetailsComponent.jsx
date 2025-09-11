@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchPlaceByIdThunk } from "../../features/plan/LocationSlice";
 import { fetchRecommandedTransport } from "../../features/service/TransportSlice";
 import { fetchRecommandedAccommodation } from "../../features/service/AccommodationSlice";
-import { Bed, Clock, MapPin, Coins, BusFront, Ruler } from "lucide-react";
+import { Bed, Clock, MapPin, Coins, BusFront, Ruler, Contact, Phone } from "lucide-react";
 import ImageCarousel from "../ui/imageCarousel"; 
 
 const DetailsComponent = ({ detailsData }) => {
@@ -82,6 +82,7 @@ const DetailsComponent = ({ detailsData }) => {
     
   } else if (category === "accommodation") {
     metaInfo.push(
+      {icon: <Phone className="w-4 h-4" />, value: data.contact},
       { icon: <Bed className="w-4 h-4" />, value: data.accommodation_category },
       {
         icon: <Coins className="w-4 h-4" />,
@@ -90,6 +91,10 @@ const DetailsComponent = ({ detailsData }) => {
     );
   } else if (category === "transport") {
     metaInfo.push(
+      {
+        icon: <Phone className="w-4 h-4" />,
+        value: data.contact,
+      },
       {
         icon: <BusFront className="w-4 h-4" />,
         value: data.transport_category,

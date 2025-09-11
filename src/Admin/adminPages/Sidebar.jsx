@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home, MapPin, Users, Activity, Building, Settings, LogOut, X,
   Images,
+  Map,
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
@@ -11,10 +12,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 
   // Define your menu items with paths
   const menuItems = [
+    {id: 'home', label: 'Home', icon: Home, path: '/'},
     { id: 'activities', label: 'All Activities', icon: Activity, path: '/allActivities' },
     { id: 'places', label: 'All Places', icon: MapPin, path: '/allPlaces' },
     { id: 'service-providers', label: 'Transport Providers', icon: Building, path: '/serviceProviders' },
     { id: 'accommodation-providers', label: 'Accommodation Providers', icon: Building, path: '/accommodationProviders' },
+    { id: 'transport-routes', label: 'Transport Routes', icon: Map, path: '/transportRoutes' },
   ];
 
   return (

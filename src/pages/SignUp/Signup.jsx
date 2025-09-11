@@ -12,12 +12,11 @@ import { getGoogleUrl } from '../../features/auth/loginAuth/authThunks';
 
 export const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [password, setPassword] = useState('');
-  const [citySearch, setCitySearch] = useState('');
-  const [selectedCity, setSelectedCity] = useState(null);
+  const [email, setEmail] = useState('');
 
   const dispatch = useDispatch();
-  const { cities, status } = useSelector((state) => state.location);
   const { loading, user, emailVerified, error } = useSelector((state) => state.register);
   const { googleUrl } = useSelector((state) => state.auth);
   const navigate = useNavigate();
@@ -25,38 +24,19 @@ export const Signup = () => {
   useEffect(() => {
     const handleMessage = (event) => {
       if (event.data?.type === "OAUTH_SUCCESS") {
-        navigate("/"); // ✅ redirect to home
+        navigate("/");
       } else if (event.data?.type === "OAUTH_ERROR") {
-        navigate("/login?error=oauth_failed"); // ❌ redirect to login
+        navigate("/login?error=oauth_failed");
       }
     };
   
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
   }, [navigate]);
-  
 
   useEffect(() => {
     dispatch(getGoogleUrl());
   }, [dispatch]);
-
-  // Fetch cities on search
-  useEffect(() => {
-    if (citySearch.trim().length > 0) {
-      const delayDebounce = setTimeout(() => {
-        dispatch(fetchCitiesThunk({ search: citySearch }));
-      }, 400);
-      return () => clearTimeout(delayDebounce);
-    }
-  }, [citySearch, dispatch]);
-
-  useEffect(() => {
-    let timer;
-    if (showPassword) {
-      timer = setTimeout(() => setShowPassword(false), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [showPassword]);
 
   const {
     register: formRegister,
@@ -64,14 +44,22 @@ export const Signup = () => {
     setValue,
     setError,
     reset,
+    watch,
     formState: { errors },
   } = useForm();
 
+  const confirmPassword = watch('confirmPassword');
+
   const onSubmit = (data) => {
-    const payload = {
-      ...data,
-      city_id: selectedCity ? selectedCity.id : null,
-    };
+    if (data.password !== data.confirmPassword) {
+      setError('confirmPassword', {
+        type: 'manual',
+        message: 'Passwords do not match',
+      });
+      return;
+    }
+
+    const payload = { ...data };
 
     dispatch(register(payload)).then((res) => {
       if (res.error) {
@@ -84,20 +72,16 @@ export const Signup = () => {
       } else {
         reset();
         setPassword('');
-        setCitySearch('');
-        setSelectedCity(null);
       }
     });
   };
 
-  // Show verify email form
   if (!emailVerified && user?.status_code === 200) {
-    return <VerifyEmailForm />;
+    return <VerifyEmailForm email={email} />;
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 relative px-4">
-      {/* Logo */}
       <h1
         className="absolute top-4 left-4 text-xl font-semibold cursor-pointer"
         onClick={() => navigate('/')}
@@ -106,13 +90,11 @@ export const Signup = () => {
         <span className="text-gray-800">Nepal</span>
       </h1>
 
-      {/* Background */}
       <div
         className="absolute inset-0 opacity-10 bg-no-repeat bg-bottom bg-contain pointer-events-none"
         style={{ backgroundImage: `url(${bg_image})` }}
       />
 
-      {/* Signup Card */}
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="bg-white border-2 border-gray-200 p-6 sm:p-8 rounded-2xl shadow-md w-full max-w-md z-10"
@@ -121,7 +103,7 @@ export const Signup = () => {
           Create Account
         </h2>
 
-        {/* Name */}
+        {/* Username */}
         <div className="mb-4">
           <label className="text-sm text-gray-700">Username</label>
           <input
@@ -139,6 +121,7 @@ export const Signup = () => {
             {...formRegister('email', { required: 'Email is required' })}
             className="w-full mt-1 px-4 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-red-400"
             placeholder="Enter your email"
+            onChange={(e) => setEmail(e.target.value)}
           />
           {errors.email && <p className="text-red-500 mt-2">{errors.email.message}</p>}
         </div>
@@ -168,43 +151,29 @@ export const Signup = () => {
           {errors.password && <p className="text-red-500 mt-2">{errors.password.message}</p>}
         </div>
 
-        {/* City */}
-        <div className="mb-6 relative">
-          <label className="text-sm text-gray-700">City</label>
+        {/* Confirm Password */}
+        <div className="mb-4 relative">
+          <label className="text-sm text-gray-700">Confirm Password</label>
           <input
-            type="text"
-            value={selectedCity ? selectedCity.name : citySearch}
-            onChange={(e) => {
-              setSelectedCity(null);
-              setCitySearch(e.target.value);
-              setValue('city_id', null);
-            }}
-            className="w-full mt-1 px-4 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-red-400"
-            placeholder="Search your city"
+            type={showConfirmPassword ? 'text' : 'password'}
+            {...formRegister('confirmPassword', {
+              required: 'Please confirm your password',
+              validate: (value) =>
+                value === password || 'Passwords do not match',
+            })}
+            className="w-full mt-1 px-4 py-2 border-2 border-gray-200 rounded-xl outline-none focus:border-red-400 pr-10"
+            placeholder="Re-enter your password"
           />
-
-          {/* Dropdown */}
-          {citySearch.length > 0 && !selectedCity && (
-            <ul className="absolute z-20 bg-white border border-gray-300 rounded-xl mt-1 w-full max-h-40 overflow-y-auto shadow-lg">
-              {status === 'loading' && <li className="p-2 text-gray-500">Loading...</li>}
-              {cities.length > 0 ? (
-                cities.map((city) => (
-                  <li
-                    key={city.id}
-                    onClick={() => {
-                      setSelectedCity(city);
-                      setCitySearch('');
-                      setValue('city_id', city.id);
-                    }}
-                    className="px-4 py-2 cursor-pointer hover:bg-gray-100"
-                  >
-                    {city.name}
-                  </li>
-                ))
-              ) : (
-                status !== 'loading' && <li className="p-2 text-gray-500">No cities found</li>
-              )}
-            </ul>
+          {confirmPassword?.length > 0 && (
+            <div
+              className="absolute right-3 top-[38px] cursor-pointer text-gray-500 hover:text-gray-700"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+            </div>
+          )}
+          {errors.confirmPassword && (
+            <p className="text-red-500 mt-2">{errors.confirmPassword.message}</p>
           )}
         </div>
 
@@ -241,7 +210,7 @@ export const Signup = () => {
             className="w-full mt-4 flex items-center justify-center border-2 py-2 border-gray-200 rounded-xl hover:bg-gray-100 transition duration-200 text-sm cursor-pointer "
           >
             <img src={googlelogo} alt="Google logo" className="mr-2" />
-              Sign in with Google
+            Sign in with Google
           </button>
         )}
 

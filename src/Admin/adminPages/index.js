@@ -5,7 +5,6 @@ import AllPlaces from './AllPlaces'
 import Dashboard from './Dashboard'
 import Logout from './Logout'
 import ServiceProviders from './ServiceProviders'
-import SettingsComponent from './Settings'
 import Sidebar from './Sidebar'
 
 
@@ -18,7 +17,6 @@ export {
   AllPlaces,
   Logout,
   ServiceProviders,
-  SettingsComponent,
   Sidebar
   
 }

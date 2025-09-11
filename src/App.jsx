@@ -22,6 +22,7 @@ import AdminLayout from "./Admin/adminPages/AdminLayout";
 import { SavedPackage } from "./pages/PublicPages/Saved";
 import ProfilePage from "./pages/Profile/Profile";
 import LogoutPage from "./pages/Login/Logout";
+import TransportRoute from "./Admin/adminPages/TransportRoute";
 
 
 function App() {
@@ -48,12 +49,10 @@ function App() {
 
       {/* Routes with Navbar */}
       <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
-         <Route path="/plans" element={<Package/>} />
-         <Route path="/saved" element={<SavedPackage/>} />
-
-        {/* User Protected Routes */}
         <Route element={<ProtectedRoute allowedRoles={["user", "admin"]} />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/plans" element={<Package/>} />
+          <Route path="/saved" element={<SavedPackage/>} />
             <Route path="/plan/:id" element={<Plan/>} />
             <Route path="/plan" element={<Plan/>} />
             <Route path="/logout" element = {<LogoutPage />}/>
@@ -63,12 +62,12 @@ function App() {
 
 
       <Route element={<AdminLayout/>}>
-          {/* Admin Protected Routes */}
         <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
           <Route path="/allPlaces" element = {<AllPlaces />}/>
           <Route path="/allActivities" element = {<AllActivities />}/>
           <Route path="/serviceproviders" element = {<ServiceProvider />}/>
           <Route path="/accommodationProviders" element = {<AccommodationProvider />}/>
+          <Route path="/transportRoutes" element = {<TransportRoute />}/>
         </Route>
       </Route>
 

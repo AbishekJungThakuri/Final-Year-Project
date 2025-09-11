@@ -124,8 +124,10 @@ button{
   cursor: pointer;
 }
 
+
 *{
   transition: all 0.2s ease-in-out;
+  box-sizing: border-box;
 }
 
 .no-scrollbar {

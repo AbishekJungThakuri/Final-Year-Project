@@ -16,7 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { deletePlanThunk, duplicatePlanThunk } from "../../features/plan/PlanSlice";
+import { deletePlanThunk, duplicatePlanThunk, fetchPlanByIdThunk } from "../../features/plan/PlanSlice";
+import { useSelector } from "react-redux";
 
 // Import the uploadImage action from your Redux slice
 import { uploadImage } from "../../features/image/imageSlice";
@@ -92,6 +93,19 @@ const ItineraryCard = ({
   const navigate = useNavigate(); // Add this hook
   
   useEffect(() => setSaved(savedProp), [savedProp]);
+  useEffect(() => {
+    setEditTitle(title);
+  }, [id]);
+  
+  useEffect(() => {
+    setEditDescription(description);
+  }, [id]);
+  
+  useEffect(() => {
+    setEditPeople(people);
+  }, [id]);
+
+
 
   const spanRef = useRef(null);
 
@@ -216,12 +230,10 @@ const ItineraryCard = ({
     setShowOptions(false);
     try {
       const result = await dispatch(duplicatePlanThunk(id)).unwrap();
-      console.log("Duplicate result:", result);
-      
-      navigate(`/plan/${result.id}`);
+      dispatch(fetchPlanByIdThunk(result.id));
+      window.location.href = `/plan/${result.id}`;
     } catch (error) {
       console.error("Failed to duplicate plan:", error);
-      // Optionally show an error message to user
     } finally {
       setIsLoading(false);
       setShowDuplicateModal(false);
@@ -480,7 +492,8 @@ const ItineraryCard = ({
           </div>
 
           {/* Rating */}
-          <div className="space-y-1 border-t pt-2">
+          {!isPrivatePlan && (
+            <div className="space-y-1 border-t pt-2">
             {!showRatingInput && (
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -526,6 +539,8 @@ const ItineraryCard = ({
               </div>
             )}
           </div>
+          )}
+          
 
           {/* User Info */}
           <div className="flex items-center gap-2 pt-2 border-t">

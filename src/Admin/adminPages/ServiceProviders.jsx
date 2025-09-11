@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  getAllTransportServices,
-  createTransportService,
-  updateTransportService,
-  deleteTransportService,
   uploadImage,
   searchCities,
   getRoutesByCity
 } from '../api/transportApi';
+import {
+  getAllTransportServices,
+  createTransportService,
+  updateTransportService,
+  deleteTransportService
+} from '../api/ServiceProviders'
 import { Plus, Trash2, Pencil, LayoutList, Grid3x3, Search, X, ChevronRight } from 'lucide-react';
 import Pagination from './Pagination';
 
@@ -26,6 +28,7 @@ const ServiceProvider = () => {
     route_ids: [],
     description: '',
     route_category: 'road',
+    contact: '',
     transport_category: '',
     average_duration: '',
     cost: '',
@@ -188,7 +191,7 @@ const ServiceProvider = () => {
     setFormData({
       route_ids: [],
       description: '',
-      route_category: 'road',
+      contact: 'road',
       transport_category: '',
       average_duration: '',
       cost: '',
@@ -244,7 +247,7 @@ const ServiceProvider = () => {
     setFormData({
       route_ids: service.route_segments?.map(s => s.route.id) || [],
       description: service.description || '',
-      route_category: service.route_category || '',
+      contact: service.contact || '',
       transport_category: service.transport_category || '',
       average_duration: service.average_duration || '',
       cost: service.cost || '',
@@ -432,7 +435,7 @@ const ServiceProvider = () => {
                                     </span>
                                     <span className="text-xs text-gray-500">{route.distance} km</span>
                                   </div>
-                                  <span className="text-xs text-gray-500">Duration: {route.average_duration}h, Cost: ${route.average_cost}</span>
+                                  <span className="text-xs text-gray-500">Duration: {route.average_duration}h, Cost: NPR. {route.average_cost}</span>
                                 </li>
                               ))}
                             </ul>
@@ -460,12 +463,12 @@ const ServiceProvider = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Route Category</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Contact</label>
                     <input
                       type="text"
-                      value="road"
-                      readOnly
-                      className="w-full border border-gray-300 rounded-lg p-3 bg-gray-100 text-gray-500 cursor-not-allowed"
+                      placeholder='e.g. +977 0000000000'
+                      onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
                     />
                   </div>
                   <div>
@@ -497,7 +500,7 @@ const ServiceProvider = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Cost</label>
                     <input
                       type="number"
-                      placeholder="e.g., 25.00"
+                      placeholder="e.g., 500"
                       step="0.01"
                       value={formData.cost}
                       onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
@@ -563,7 +566,7 @@ const ServiceProvider = () => {
                   <tr>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Route Category</th>
+                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transport Category</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
                     <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
@@ -591,7 +594,7 @@ const ServiceProvider = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                          {service.route_category || 'N/A'}
+                          {service.contact || 'N/A'}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -655,9 +658,9 @@ const ServiceProvider = () => {
                     <div className="space-y-2">
                       <p className="text-sm text-gray-900 line-clamp-2">{service.description}</p>
                       <div className="flex gap-2 flex-wrap">
-                        {service.route_category && (
+                        {service.contact && (
                           <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                            {service.route_category}
+                            {service.contact}
                           </span>
                         )}
                         {service.transport_category && (

@@ -3,7 +3,7 @@ import DayTimeline from "@/components/PlanComp/DayTimeline";
 import RightSidebar from "@/components/PlanComp/RightSidebar";
 import StartCitySelector from "@/components/PlanComp/StartCitySelector";
 import AddDayComponent from "@/components/PlanComp/AddDayComponent";
-import {  Plus, Trash, Sparkles, Bot } from "lucide-react";
+import { Plus, Trash, Sparkles, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -20,10 +20,8 @@ import {
   updateDayThunk,
   deleteStepThunk,
 } from "../../features/plan/PlanSlice";
-import {
-  connectToPlanWebSocket,
-} from "../../features/plan/PlanWebsocket";
-import { transformMapData } from '../../features/plan/transformMapData'
+import { connectToPlanWebSocket } from "../../features/plan/PlanWebsocket";
+import { transformMapData } from "../../features/plan/transformMapData";
 
 const Plan = () => {
   const { id: planId } = useParams();
@@ -33,7 +31,6 @@ const Plan = () => {
   const {
     data: plan,
     generateStatus,
-    editStatus,
     loading,
     error,
   } = useSelector((state) => state.plan);
@@ -41,7 +38,7 @@ const Plan = () => {
   const [isEditable, setIsEditable] = useState();
   const [isMyPlan, setIsMyPlan] = useState(false);
   const [detailsData, setDetailsData] = useState({});
-  const [recommandData, setRecommandData] = useState({})
+  const [recommandData, setRecommandData] = useState({});
   const [addStepData, setAddStepData] = useState({});
   const [showCitySearch, setShowCitySearch] = useState(false);
 
@@ -50,24 +47,28 @@ const Plan = () => {
   useEffect(() => {
     if (planId) {
       dispatch(fetchPlanByIdThunk(planId));
-    } else {
-      const prompt = searchParams.get("prompt");
-      if (!prompt) {
-        navigate("/");
-        return;
-      }
-      const token = localStorage.getItem("accessToken");
-      dispatch(setGenerationInProgress());
-      const cleanup = connectToPlanWebSocket(dispatch, prompt, token);
-      cleanupRef.current = cleanup;
+      return;
     }
 
-    // Cleanup function
+    const prompt = searchParams.get("prompt");
+    if (!prompt) {
+      navigate("/");
+      return;
+    }
+
+    dispatch(setGenerationInProgress());
+
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+
+    (async () => {
+      const cleanup = await connectToPlanWebSocket(dispatch, prompt);
+      cleanupRef.current = cleanup;
+    })();
+
     return () => {
-      if (cleanupRef.current) {
-        cleanupRef.current();
-        cleanupRef.current = null;
-      }
+      cleanupRef.current?.();
+      cleanupRef.current = null;
     };
   }, [dispatch, planId, searchParams, navigate]);
 
@@ -78,38 +79,52 @@ const Plan = () => {
   }, [generateStatus, plan, planId, navigate]);
 
   useEffect(() => {
+    if (planId) {
+      dispatch(fetchPlanByIdThunk(planId));
+    }
+  }, [dispatch, planId]);
+
+  const itineraryStatusRef = useRef(null);
+  useEffect(() => {
+    if (generateStatus === "generating" && itineraryStatusRef.current) {
+      itineraryStatusRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [generateStatus, plan]);
+
+  useEffect(() => {
     if (plan?.user?.id) {
-      const localUserId = localStorage.getItem("userId");      
-      if(plan.user.id.toString() === localUserId){
+      const localUserId = localStorage.getItem("userId");
+      if (plan.user.id.toString() === localUserId) {
         setIsMyPlan(true);
-        if(isEditable === undefined){
+        if (isEditable === undefined) {
           setIsEditable(true);
         }
-      }
-      else{
+      } else {
         setIsMyPlan(false);
         setIsEditable(false);
       }
     }
   }, [plan]);
 
-
   // Enhanced setActiveComponent to handle place selection from RightSidebar
   const handleSetActiveComponent = (componentId, data) => {
     console.log("componentId: ", componentId, "data: ", data);
-    switch(componentId) {
-      case 'details':
+    switch (componentId) {
+      case "details":
         setDetailsData(data);
         break;
-      case 'add':
+      case "add":
         setAddStepData(data);
         break;
-      case 'recommand':
+      case "recommand":
         setRecommandData(data);
         break;
       default:
         break;
-      }
+    }
     setActiveSidebarComponent(componentId);
   };
 
@@ -165,13 +180,16 @@ const Plan = () => {
             Error loading plan: {error}
           </p>
           <div className="space-x-4">
-            <Button
+            {planId && (
+              
+              <Button
               onClick={() =>
                 planId ? dispatch(fetchPlanByIdThunk(planId)) : navigate("/")
               }
-            >
-              {planId ? "Try Again" : "Go Home"}
+              >
+              Try Again
             </Button>
+            )}
             {!planId && (
               <Button variant="outline" onClick={() => navigate("/")}>
                 Go Home
@@ -185,11 +203,15 @@ const Plan = () => {
 
   if (!plan) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg mb-4">Plan not found</p>
-          <Button onClick={() => navigate("/")}>Go Home</Button>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center px-4">
+        <div className="relative flex justify-center items-center mb-6">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <Bot className="absolute text-primary w-6 h-6 animate-pulse" />
         </div>
+        <h2 className="text-xl font-semibold text-primary mb-2 flex items-center justify-center gap-2">
+          <Sparkles className="w-5 h-5 animate-bounce" />
+          Loading ..
+        </h2>
       </div>
     );
   }
@@ -233,20 +255,20 @@ const Plan = () => {
                     className="flex cursor-pointer items-center gap-1 hover:text-primary"
                   >
                     <span className="underline underline-offset-2">
-                      Start:{" "}
-                      {plan.start_city?.name || "Select"}
+                      Start: {plan.start_city?.name || "Select"}
                     </span>
                   </button>
                   {showCitySearch && isEditable && (
-                    <StartCitySelector  
+                    <StartCitySelector
                       handleUpdatePlan={handleUpdatePlan}
-                      setShowCitySearch={setShowCitySearch}                  
+                      setShowCitySearch={setShowCitySearch}
                     />
                   )}
                 </div>
               </div>
 
               {plan.days && plan.days.length > 0 ? (
+              <>
                 <DayTimeline
                   planData={plan}
                   addStepData={addStepData}
@@ -255,25 +277,37 @@ const Plan = () => {
                   onTitleEdit={handleDayTitleChange}
                   onStepRemove={handleStepRemove}
                 />
-              
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  {generateStatus === "generating" ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Building your itinerary...
-                    </div>
-                  ) : (
-                    isEditable && (
-                      <AddDayComponent
-                        planData={plan}
-                        dayIndex={-1}
-                        addStepData={addStepData}
-                        onSetActiveComponent={handleSetActiveComponent}
-                      />  
-                    )
-                  )}
-                </div>
-              )}
+                {generateStatus === "generating" && (
+                  <div
+                    ref={itineraryStatusRef}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    Generating your itinerary...
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                {generateStatus === "generating" ? (
+                  <div
+                    ref={itineraryStatusRef}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    Building your itinerary...
+                  </div>
+                ) : (
+                  isEditable && (
+                    <AddDayComponent
+                      planData={plan}
+                      dayIndex={-1}
+                      addStepData={addStepData}
+                      onSetActiveComponent={handleSetActiveComponent}
+                    />
+                  )
+                )}
+              </div>
+            )}
+
             </div>
           </div>
         </div>

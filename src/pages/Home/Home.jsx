@@ -142,7 +142,7 @@ export const Home = () => {
         {/* Subtle background element */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-50/30 to-white"></div>
 
-        <div className="relative max-w-6xl mx-auto px-6 py-16">
+        <div className="relative mx-auto px-6 py-16">
           <PromptInput onSubmit={handlePromptSubmit} />
         </div>
       </div>

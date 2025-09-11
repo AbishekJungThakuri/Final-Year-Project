@@ -1,5 +1,4 @@
 import axios from '../../services/axiosInstances';
-const BASE_URL = 'http://localhost:8000';
 
 // Valid parameter options for dropdown
 export const IMAGE_PARAMETERS = {
@@ -52,7 +51,7 @@ export const getAllImages = async ({
       params.user_id = user_id;
     }
     
-    const response = await axios.get(`${BASE_URL}/images/`, { params });
+    const response = await axios.get(`/images/`, { params });
     return response.data;
   } catch (error) {
     console.error('API Error:', error.response?.data || error.message);
@@ -67,7 +66,7 @@ export const getImageById = async (imageId) => {
       throw new Error('Image ID is required');
     }
     
-    const response = await axios.get(`${BASE_URL}/images/${imageId}`);
+    const response = await axios.get(`/images/${imageId}`);
     return response.data;
   } catch (error) {
     console.error('API Error:', error.response?.data || error.message);
@@ -95,7 +94,7 @@ export const uploadImage = async (imageFile, parameter) => {
     const formData = new FormData();
     formData.append('file', imageFile);
     
-    const response = await axios.post(`${BASE_URL}/images/?category=${parameter}`, formData, {
+    const response = await axios.post(`/images/?category=${parameter}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -118,7 +117,7 @@ export const updateImage = async (imageId, imageData) => {
       throw new Error('Image data is required');
     }
     
-    const response = await axios.put(`${BASE_URL}/images/${imageId}`, imageData);
+    const response = await axios.put(`/images/${imageId}`, imageData);
     return response.data;
   } catch (error) {
     console.error('API Error:', error.response?.data || error.message);
@@ -133,7 +132,7 @@ export const deleteImage = async (imageId) => {
       throw new Error('Image ID is required');
     }
     
-    const response = await axios.delete(`${BASE_URL}/images/${imageId}`);
+    const response = await axios.delete(`/images/${imageId}`);
     return response.data;
   } catch (error) {
     console.error('API Error:', error.response?.data || error.message);

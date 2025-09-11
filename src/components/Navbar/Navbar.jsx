@@ -7,7 +7,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const { user, role } = useSelector((state) => state.auth);
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
@@ -17,7 +17,7 @@ export default function Navbar() {
   }, [dispatch, user]);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-4 py-2 bg-white/90 backdrop-blur-md shadow-md">
+    <nav className="fixed w-full top-0 left-0 right-0 z-50 flex justify-between items-center px-4 py-2 bg-white/90 backdrop-blur-md shadow-md">
       {/* Logo */}
       <div
         onClick={() => navigate("/")}
@@ -37,43 +37,26 @@ export default function Navbar() {
         <Link to="/">Home</Link>
         <Link to="/plans">Plans</Link>
         <Link to="/saved">Saved</Link>
+        <Link to="/profile">Profile</Link>
 
-        {isAuthenticated ? (
-          <>
-          <Link to="/profile">Profile</Link>
-          <div
-          onClick={() => navigate("/profile")}
-          className="cursor-pointer"
-          >
-            {user?.image?.url ? (
-              <img
-                src={user.image.url}
-                alt={user.username}
-                className="w-10 h-10 rounded-full object-cover border"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold uppercase">
-                {user?.username?.[0] || "?"}
-              </div>
-            )}
-          </div>
-          </>
-        ) : (
-          <div className="flex gap-3">
-            <Link
-              to="/login"
-              className="px-4 py-2 border rounded-full hover:bg-gray-100 transition"
-            >
-              Login
-            </Link>
-            <Link
-              to="/signup"
-              className="px-4 py-2 bg-primary text-white rounded-full hover:bg-black/80 transition"
-            >
-              Signup
-            </Link>
-          </div>
-        )}
+        {role=="admin"?(
+          <Link to="/allPlaces">Admin</Link>
+        ):null}
+
+        <div onClick={() => navigate("/profile")} className="cursor-pointer">
+          {user?.image?.url ? (
+            <img
+              src={user.image.url}
+              alt={user.username}
+              className="w-10 h-10 rounded-full object-cover border"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-semibold uppercase">
+              {user?.username?.[0] || "?"}
+            </div>
+          )}
+        </div>
+        
       </div>
     </nav>
   );

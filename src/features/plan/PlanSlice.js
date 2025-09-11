@@ -73,7 +73,6 @@ export const duplicatePlanThunk = createAsyncThunk(
   async (planId, { rejectWithValue }) => {
     try {
       const res = await axios.post(`/plans/${planId}/duplicate`);
-      console.log("API duplicate response:", res.data); // Debug log
       return res.data.data; // Make sure backend returns duplicated plan here
     } catch (err) {
       return rejectWithValue(err.response?.data?.detail || err.message);
@@ -238,6 +237,9 @@ const PlanSlice = createSlice({
     markPlanGenerationComplete: (state) => {
       state.generateStatus = 'succeeded';
     },
+    markPlanGenerationError: (state, action) => {
+      state.error = action.payload || 'Failed to generate plan';
+    },
     // Add this new action
     setGenerationInProgress: (state) => {
       console.log("GENERATION IN PROGRESS");
@@ -304,9 +306,9 @@ const PlanSlice = createSlice({
 
       // Duplicate
       .addCase(duplicatePlanThunk.fulfilled, (state, action) => {
-        const newPlan = action.payload; // the full duplicated plan from backend
-        state.data = newPlan;           // update currently selected plan
-        state.list.push(newPlan);       // add to list
+        console.log(action.payload);
+        state.data = action.payload;           // update currently selected plan
+        state.list.push(action.payload);        // add new plan to list
       })      
 
       .addCase(addDayThunk.fulfilled, (state, action) => {
@@ -359,5 +361,5 @@ const PlanSlice = createSlice({
   },
 });
 
-export const { setPlanFromSocket, markPlanGenerationComplete, setGenerationInProgress } = PlanSlice.actions;
+export const { setPlanFromSocket, markPlanGenerationComplete, setGenerationInProgress, markPlanGenerationError } = PlanSlice.actions;
 export default PlanSlice.reducer;
