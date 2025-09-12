@@ -63,7 +63,7 @@ export const Package = () => {const [showLoginModal, setShowLoginModal] = useSta
   // Handle pagination for my plans
   const handleMyPlansPageChange = (newPage) => {
       const sortParams = getSortParams(myPlansCategory);
-      dispatch(fetchMyPlansThunk({ 
+      dispatch(fetchAllPlansThunk({ 
         page: newPage, 
         size: mySize,
         search: myPlansSearch,

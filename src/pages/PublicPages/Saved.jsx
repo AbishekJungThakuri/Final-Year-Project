@@ -58,7 +58,7 @@ export const SavedPackage = () => {const [showLoginModal, setShowLoginModal] = u
   const handleMyPlansPageChange = (newPage) => {
     if (isAuthenticated && user?.id) {
       const sortParams = getSortParams(myPlansCategory);
-      dispatch(fetchMyPlansThunk({ 
+      dispatch(fetchSavedPlansThunk({ 
         page: newPage, 
         size: mySize,
         search: myPlansSearch,
